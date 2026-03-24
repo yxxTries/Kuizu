@@ -53,11 +53,11 @@ For each question verify that:
 
 Return ONLY valid JSON in this exact format with no other text:
 
-{"questions":[
-{"question":"string",
+{{"questions":[
+{{"question":"string",
 "choices":["First option text","Second option text","Third option text","Fourth option text"],
-"correct_index":0}
-]}
+"correct_index":0}}
+]}}
 
 CONTENT:
 {document_text}
