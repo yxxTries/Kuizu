@@ -25,20 +25,43 @@ MAX_TEXT_CHARS = 4000
 # Prompt template (exactly as specified)
 # ---------------------------------------------------------------------------
 
-PROMPT_TEMPLATE = """You are a teacher creating a quiz.
+PROMPT_TEMPLATE = """You are an expert teacher and assessment designer creating a quiz.
+
 Based on the following content, generate exactly 10 multiple choice questions.
 
-Rules:
-- Each question must have exactly 4 answer choices
-- Only one answer is correct
-- Answers must be concise
-- Questions should test understanding
+Question Design Rules:
+- Each question must test understanding of a key concept from the content.
+- Avoid trivial wording or copy-pasting sentences from the text.
+- Questions must be clear, specific, and unambiguous.
 
-Return ONLY valid JSON in this exact format with no other text, explanation, or markdown:
-{{"questions":[{{"question":"string","choices":["A","B","C","D"],"correct_index":0}}]}}
+Answer Choice Rules:
+- Each question must have exactly 4 answer choices.
+- Exactly ONE answer must be correct.
+- The correct answer must be objectively correct based only on the content.
+- The other 3 answers must be plausible but clearly incorrect.
+- All answer choices must be DIFFERENT from each other.
+- Answer choices must be mutually exclusive (no overlapping meaning).
+- Do NOT include choices like "All of the above" or "None of the above".
+- All options should be similar in length and style.
+- All options must belong to the same category (e.g., all dates, all concepts, all definitions).
 
-CONTENT: {document_text}"""
+Quality Check (before output):
+For each question verify that:
+1. Only one answer is correct.
+2. No two choices could both be considered correct.
+3. No choices are duplicates or paraphrases of each other.
 
+Return ONLY valid JSON in this exact format with no other text:
+
+{"questions":[
+{"question":"string",
+"choices":["First option text","Second option text","Third option text","Fourth option text"],
+"correct_index":0}
+]}
+
+CONTENT:
+{document_text}
+"""
 
 # ---------------------------------------------------------------------------
 # Public interface
