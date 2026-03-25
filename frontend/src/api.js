@@ -3,11 +3,13 @@ const BASE_URL = "http://localhost:8000";
 /**
  * Upload a file to the backend and receive a generated quiz.
  * @param {File} file - The PDF or PPTX file to upload.
+ * @param {number} numQuestions - How many questions to generate (1–20).
  * @returns {Promise<{questions: Array}>} The quiz data.
  */
-export async function generateQuiz(file) {
+export async function generateQuiz(file, numQuestions = 10) {
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("num_questions", String(numQuestions));
 
   const response = await fetch(`${BASE_URL}/generate-quiz`, {
     method: "POST",

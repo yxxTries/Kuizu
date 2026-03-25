@@ -3,18 +3,16 @@ import tempfile
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from extractor import extract_text
 from quiz_generator import generate_quiz
 
-# Load .env from the same directory as this file
 load_dotenv(Path(__file__).parent / ".env")
 
 app = FastAPI(title="Quiz AI", version="1.0.0")
 
-# Allow the Vite dev server (and any localhost port) to call this API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -32,7 +30,10 @@ def health():
 
 
 @app.post("/generate-quiz")
-async def generate_quiz_endpoint(file: UploadFile = File(...)):
+async def generate_quiz_endpoint(
+    file: UploadFile = File(...),
+    num_questions: int = Form(10),
+):
     # ── 1. Validate file type ──────────────────────────────────────────────
     suffix = Path(file.filename).suffix.lower()
     if suffix not in ALLOWED_EXTENSIONS:
@@ -58,7 +59,7 @@ async def generate_quiz_endpoint(file: UploadFile = File(...)):
 
     # ── 4. Generate quiz ───────────────────────────────────────────────────
     try:
-        quiz = generate_quiz(text)
+        quiz = generate_quiz(text, num_questions=num_questions)
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except ValueError as e:

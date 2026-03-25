@@ -10,12 +10,13 @@ function fileIsValid(file) {
 }
 
 export default function Upload({ onQuizReady }) {
-  const [dragging, setDragging]   = useState(false);
-  const [file, setFile]           = useState(null);
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState("");
-  const [progress, setProgress]   = useState("");
-  const inputRef                  = useRef();
+  const [dragging, setDragging]       = useState(false);
+  const [file, setFile]               = useState(null);
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState("");
+  const [progress, setProgress]       = useState("");
+  const [numQuestions, setNumQuestions] = useState(10);
+  const inputRef                      = useRef();
 
   const pickFile = (f) => {
     setError("");
@@ -56,7 +57,7 @@ export default function Upload({ onQuizReady }) {
     }, 3000);
 
     try {
-      const quiz = await generateQuiz(file);
+      const quiz = await generateQuiz(file, numQuestions);
       clearInterval(ticker);
       onQuizReady(quiz);
     } catch (err) {
@@ -82,7 +83,7 @@ export default function Upload({ onQuizReady }) {
           <span style={styles.accent}>Get a quiz.</span>
         </h1>
         <p style={styles.sub}>
-          Upload a PDF or PowerPoint. The AI reads it and writes 10 questions — instantly.
+          Upload a PDF or PowerPoint. The AI reads it and writes your questions — instantly.
         </p>
 
         {/* Drop zone */}
@@ -130,6 +131,30 @@ export default function Upload({ onQuizReady }) {
           )}
         </div>
 
+        {/* Question count slider */}
+        <div style={styles.sliderWrap}>
+          <div style={styles.sliderHeader}>
+            <span style={styles.sliderLabel}>Number of questions</span>
+            <span style={styles.sliderValue}>{numQuestions}</span>
+          </div>
+          <input
+            type="range"
+            min={5}
+            max={20}
+            step={1}
+            value={numQuestions}
+            onChange={(e) => setNumQuestions(Number(e.target.value))}
+            disabled={loading}
+            style={styles.slider}
+          />
+          <div style={styles.sliderTicks}>
+            <span>5</span>
+            <span>10</span>
+            <span>15</span>
+            <span>20</span>
+          </div>
+        </div>
+
         {/* Error */}
         {error && <div style={styles.error}>{error}</div>}
 
@@ -147,7 +172,7 @@ export default function Upload({ onQuizReady }) {
               <span style={styles.spinner} />
               {progress}
             </span>
-          ) : "Generate Quiz →"}
+          ) : `Generate ${numQuestions} Questions →`}
         </button>
 
         <p style={styles.hint}>
@@ -160,6 +185,39 @@ export default function Upload({ onQuizReady }) {
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(24px); }
           to   { opacity: 1; transform: translateY(0); }
+        }
+        input[type=range] {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 100%;
+          height: 4px;
+          background: #2e2e42;
+          border-radius: 2px;
+          outline: none;
+          cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #7c6fff;
+          cursor: pointer;
+          border: 2px solid #0a0a0f;
+          box-shadow: 0 0 0 2px #7c6fff44;
+        }
+        input[type=range]::-moz-range-thumb {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #7c6fff;
+          cursor: pointer;
+          border: 2px solid #0a0a0f;
+        }
+        input[type=range]:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
         }
       `}</style>
     </div>
@@ -299,6 +357,46 @@ const styles = {
     padding: "4px 8px",
     flexShrink: 0,
     lineHeight: 1,
+  },
+  sliderWrap: {
+    width: "100%",
+    maxWidth: "520px",
+    marginBottom: "20px",
+    background: "#12121c",
+    border: "1px solid #1e1e2e",
+    borderRadius: "14px",
+    padding: "18px 22px",
+    boxSizing: "border-box",
+  },
+  sliderHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+    marginBottom: "14px",
+  },
+  sliderLabel: {
+    fontSize: "14px",
+    color: "#8e8ea0",
+    fontWeight: 500,
+  },
+  sliderValue: {
+    fontFamily: "'Syne', sans-serif",
+    fontWeight: 800,
+    fontSize: "22px",
+    color: "#7c6fff",
+    lineHeight: 1,
+  },
+  slider: {
+    display: "block",
+    width: "100%",
+    marginBottom: "8px",
+  },
+  sliderTicks: {
+    display: "flex",
+    justifyContent: "space-between",
+    fontSize: "12px",
+    color: "#3d3d5c",
+    paddingTop: "2px",
   },
   error: {
     background: "#1e0f0f",

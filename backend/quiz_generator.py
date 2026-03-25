@@ -3,12 +3,6 @@ import os
 import re
 import requests
 
-# ---------------------------------------------------------------------------
-# Configuration — change these to switch AI backends
-# ---------------------------------------------------------------------------
-
-# "ollama" uses a local Ollama instance (free, no API key needed)
-# "groq"   uses the Groq cloud API (free tier, requires GROQ_API_KEY in .env)
 AI_BACKEND = os.getenv("AI_BACKEND", "ollama")
 
 OLLAMA_URL   = os.getenv("OLLAMA_URL",   "http://localhost:11434/api/generate")
@@ -18,16 +12,11 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL   = os.getenv("GROQ_MODEL",   "llama3-8b-8192")
 GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions"
 
-# Maximum characters of document text sent to the LLM
 MAX_TEXT_CHARS = 4000
-
-# ---------------------------------------------------------------------------
-# Prompt template (exactly as specified)
-# ---------------------------------------------------------------------------
 
 PROMPT_TEMPLATE = """You are an expert teacher and assessment designer creating a quiz.
 
-Based on the following content, generate exactly 10 multiple choice questions.
+Based on the following content, generate exactly {num_questions} multiple choice questions.
 
 Question Design Rules:
 - Each question must test understanding of a key concept from the content.
@@ -59,161 +48,91 @@ Return ONLY valid JSON in this exact format with no other text:
 "correct_index":0}}
 ]}}
 
-CONTENT:
-{document_text}
-"""
+Document content:
+{document_text}"""
 
-# ---------------------------------------------------------------------------
-# Public interface
-# ---------------------------------------------------------------------------
 
-def generate_quiz(document_text: str) -> dict:
-    """
-    Send document text to the configured LLM and return a validated quiz dict.
-    Retries once with a stricter prompt if the first attempt fails to parse.
-    """
+def generate_quiz(document_text: str, num_questions: int = 10) -> dict:
+    num_questions = max(1, min(num_questions, 20))
     truncated = document_text[:MAX_TEXT_CHARS]
-    prompt    = PROMPT_TEMPLATE.format(document_text=truncated)
-
-    raw = _call_llm(prompt)
-    quiz = _parse_and_validate(raw)
-
-    if quiz is None:
-        # Retry with an even more explicit instruction
-        strict_prompt = prompt + "\n\nCRITICAL: Output ONLY the JSON object. No markdown. No explanation. Start with { and end with }."
-        raw  = _call_llm(strict_prompt)
-        quiz = _parse_and_validate(raw)
-
-    if quiz is None:
-        raise ValueError(
-            "The AI did not return valid quiz JSON after two attempts. "
-            "Try a different document or switch AI backend."
-        )
-
-    return quiz
-
-
-# ---------------------------------------------------------------------------
-# LLM backend callers
-# ---------------------------------------------------------------------------
-
-def _call_llm(prompt: str) -> str:
+    prompt = PROMPT_TEMPLATE.format(
+        num_questions=num_questions,
+        document_text=truncated,
+    )
     if AI_BACKEND == "groq":
-        return _call_groq(prompt)
-    return _call_ollama(prompt)
+        raw = _call_groq(prompt)
+    else:
+        raw = _call_ollama(prompt)
+    return _parse_quiz(raw, num_questions)
 
 
 def _call_ollama(prompt: str) -> str:
-    payload = {
-        "model":  OLLAMA_MODEL,
-        "prompt": prompt,
-        "stream": False,
-        "format": "json",   # Ollama's native JSON mode
-        "options": {"temperature": 0.3},
-    }
     try:
-        resp = requests.post(OLLAMA_URL, json=payload, timeout=120)
-        resp.raise_for_status()
-    except requests.exceptions.ConnectionError:
-        raise RuntimeError(
-            "Cannot connect to Ollama. "
-            "Make sure Ollama is running: `ollama serve` "
-            "and that the model is pulled: `ollama pull llama3`"
+        resp = requests.post(
+            OLLAMA_URL,
+            json={"model": OLLAMA_MODEL, "prompt": prompt, "stream": False},
+            timeout=120,
         )
-    return resp.json().get("response", "")
+        resp.raise_for_status()
+        return resp.json()["response"]
+    except requests.RequestException as e:
+        raise RuntimeError(f"Ollama request failed: {e}") from e
 
 
 def _call_groq(prompt: str) -> str:
     if not GROQ_API_KEY:
-        raise RuntimeError(
-            "GROQ_API_KEY is not set. "
-            "Add it to backend/.env or set AI_BACKEND=ollama to use a local model."
+        raise RuntimeError("GROQ_API_KEY is not set in the environment.")
+    try:
+        resp = requests.post(
+            GROQ_URL,
+            headers={
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": GROQ_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.7,
+            },
+            timeout=60,
         )
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type":  "application/json",
-    }
-    payload = {
-        "model": GROQ_MODEL,
-        "messages": [{"role": "user", "content": prompt}],
-        "response_format": {"type": "json_object"},
-        "temperature": 0.3,
-    }
-    try:
-        resp = requests.post(GROQ_URL, headers=headers, json=payload, timeout=60)
         resp.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        raise RuntimeError(f"Groq API error: {e.response.text}")
-    return resp.json()["choices"][0]["message"]["content"]
+        return resp.json()["choices"][0]["message"]["content"]
+    except requests.RequestException as e:
+        raise RuntimeError(f"Groq request failed: {e}") from e
 
 
-# ---------------------------------------------------------------------------
-# JSON parsing + validation
-# ---------------------------------------------------------------------------
-
-def _parse_and_validate(raw: str) -> dict | None:
-    """
-    Try to extract and validate a quiz JSON object from the LLM output.
-    Returns the dict on success, or None on any failure.
-    """
-    if not raw or not raw.strip():
-        return None
-
-    # Strip markdown code fences if present
-    cleaned = re.sub(r"```(?:json)?", "", raw).strip()
-
-    # Find the outermost JSON object
-    start = cleaned.find("{")
-    end   = cleaned.rfind("}")
-    if start == -1 or end == -1:
-        return None
-
-    json_str = cleaned[start : end + 1]
-
+def _parse_quiz(raw: str, num_questions: int = 10) -> dict:
+    cleaned = re.sub(r"```(?:json)?\s*", "", raw).strip()
+    match = re.search(r'\{.*"questions"\s*:\s*\[.*\]\s*\}', cleaned, re.DOTALL)
+    if not match:
+        raise ValueError(f"Could not find JSON in LLM response. Raw: {raw[:500]}")
     try:
-        data = json.loads(json_str)
-    except json.JSONDecodeError:
-        return None
-
-    return _validate_quiz(data)
-
-
-def _validate_quiz(data: dict) -> dict | None:
-    """
-    Ensure the quiz has exactly 10 questions, each with 4 choices
-    and a valid correct_index. Returns cleaned dict or None.
-    """
-    if not isinstance(data, dict):
-        return None
-
-    questions = data.get("questions")
-    if not isinstance(questions, list) or len(questions) == 0:
-        return None
-
+        data = json.loads(match.group())
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON from LLM: {e}. Raw: {raw[:500]}") from e
+    if "questions" not in data or not isinstance(data["questions"], list):
+        raise ValueError("LLM response missing 'questions' list.")
     valid = []
-    for q in questions:
-        if not isinstance(q, dict):
+    for item in data["questions"]:
+        if not isinstance(item, dict):
             continue
-        question  = q.get("question", "").strip()
-        choices   = q.get("choices", [])
-        correct   = q.get("correct_index")
-
+        q = item.get("question", "").strip()
+        choices = item.get("choices", [])
+        idx = item.get("correct_index")
         if (
-            question
+            q
             and isinstance(choices, list)
             and len(choices) == 4
             and all(isinstance(c, str) and c.strip() for c in choices)
-            and isinstance(correct, int)
-            and 0 <= correct <= 3
+            and isinstance(idx, int)
+            and 0 <= idx <= 3
         ):
             valid.append({
-                "question":      question,
-                "choices":       [c.strip() for c in choices],
-                "correct_index": correct,
+                "question": q,
+                "choices": [c.strip() for c in choices],
+                "correct_index": idx,
             })
-
-    if len(valid) < 5:   # need at least half to be usable
-        return None
-
-    # Pad to 10 if some were malformed (edge case)
-    return {"questions": valid[:10]}
+    if not valid:
+        raise ValueError(f"No valid questions parsed. Raw: {raw[:500]}")
+    return {"questions": valid[:num_questions]}
