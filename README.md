@@ -1,7 +1,7 @@
 # QuizAI — slides → quiz in seconds
 
 Upload a PDF or PowerPoint. The AI reads it and writes 10 multiple-choice questions.
-Play a Kahoot-style quiz right in your browser.
+Play a Kahoot-style quiz right in your browser. Built this as a teaching aid for my tutor job.
 
 ---
 
