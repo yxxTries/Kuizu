@@ -1,0 +1,19 @@
+@echo off
+echo Starting QuizAI...
+
+echo Starting Ollama...
+start "Ollama" cmd /k "ollama serve"
+
+echo Starting Backend...
+start "Backend" /D "%~dp0backend" cmd /k "uvicorn main:app --reload"
+
+echo Starting Frontend...
+start "Frontend" /D "%~dp0frontend" cmd /k "npm run dev"
+
+echo Waiting for services to start...
+timeout /t 3 /nobreak > NUL
+
+echo Opening browser...
+start http://localhost:5173
+
+echo All services are starting in separate windows. Close those windows to stop them.
