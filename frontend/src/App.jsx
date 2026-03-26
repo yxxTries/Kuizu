@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import Upload from "./Upload.jsx";
+import Preview from "./Preview.jsx";
 import Quiz from "./Quiz.jsx";
 
-// Global reset styles applied once at the root
 const globalStyle = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -12,20 +12,25 @@ const globalStyle = `
   }
   button { font-family: inherit; }
   input  { font-family: inherit; }
+  textarea { font-family: inherit; }
 
-  /* Responsive: stack answer grid on small screens */
   @media (max-width: 520px) {
     .quiz-grid { grid-template-columns: 1fr !important; }
   }
 `;
 
 export default function App() {
-  // "upload" | "quiz"
+  // "upload" | "preview" | "quiz"
   const [page, setPage] = useState("upload");
   const [quiz, setQuiz] = useState(null);
 
   const handleQuizReady = (quizData) => {
     setQuiz(quizData);
+    setPage("preview");
+  };
+
+  const handleStartQuiz = (editedQuiz) => {
+    setQuiz(editedQuiz);
     setPage("quiz");
   };
 
@@ -37,8 +42,9 @@ export default function App() {
   return (
     <>
       <style>{globalStyle}</style>
-      {page === "upload" && <Upload onQuizReady={handleQuizReady} />}
-      {page === "quiz"   && <Quiz   quiz={quiz} onRestart={handleRestart} />}
+      {page === "upload"  && <Upload  onQuizReady={handleQuizReady} />}
+      {page === "preview" && <Preview quiz={quiz} onStart={handleStartQuiz} onBack={handleRestart} />}
+      {page === "quiz"    && <Quiz    quiz={quiz} onRestart={handleRestart} />}
     </>
   );
 }
