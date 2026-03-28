@@ -103,7 +103,8 @@ def _call_groq(prompt: str) -> str:
         resp.raise_for_status()
         return resp.json()["choices"][0]["message"]["content"]
     except requests.RequestException as e:
-        raise RuntimeError(f"Groq request failed: {e}") from e
+        error_details = resp.text if 'resp' in locals() else str(e)
+        raise RuntimeError(f"Groq request failed: {e}. Details: {error_details}") from e
 
 
 def _parse_quiz(raw: str, num_questions: int = 10) -> dict:
