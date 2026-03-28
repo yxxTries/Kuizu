@@ -2,6 +2,10 @@ import json
 import os
 import re
 import requests
+from dotenv import load_dotenv
+from pathlib import Path
+
+load_dotenv(Path(__file__).parent / ".env")
 
 AI_BACKEND = os.getenv("AI_BACKEND", "ollama")
 

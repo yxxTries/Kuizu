@@ -1,4 +1,5 @@
-const BASE_URL = "http://localhost:8000";
+// Use an environment variable for the backend URL, fallback to localhost for local dev
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
 /**
  * Upload a file to the backend and receive a generated quiz.

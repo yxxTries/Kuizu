@@ -3,19 +3,19 @@ import tempfile
 from pathlib import Path
 
 from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent / ".env")
+
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from extractor import extract_text
 from quiz_generator import generate_quiz
 
-load_dotenv(Path(__file__).parent / ".env")
-
 app = FastAPI(title="Quiz AI", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["*"], # Allow all origins so Vercel and local tunnels can access it
     allow_methods=["*"],
     allow_headers=["*"],
 )
