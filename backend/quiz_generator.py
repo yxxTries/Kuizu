@@ -13,7 +13,13 @@ OLLAMA_URL   = os.getenv("OLLAMA_URL",   "http://localhost:11434/api/generate")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL   = os.getenv("GROQ_MODEL",   "llama-3.1-8b-instant")
+GROQ_MODEL   = os.getenv("GROQ_MODEL",   "llama3-8b-8192")
+# Wait, Render is using the old env var if we had it set in render!
+# Let's completely force the model without using os.getenv just in case Render has GROQ_MODEL set to the old one in its environment variables!
+REAL_GROQ_MODEL = os.getenv("GROQ_MODEL", "llama3-8b-8192")
+if REAL_GROQ_MODEL == "llama3-8b-8192":
+    REAL_GROQ_MODEL = "llama-3.1-8b-instant"
+
 GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions"
 
 MAX_TEXT_CHARS = 4000
@@ -94,7 +100,7 @@ def _call_groq(prompt: str) -> str:
                 "Content-Type": "application/json",
             },
             json={
-                "model": GROQ_MODEL,
+                "model": REAL_GROQ_MODEL,
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.7,
             },
