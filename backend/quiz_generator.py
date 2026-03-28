@@ -7,7 +7,7 @@ from pathlib import Path
 
 load_dotenv(Path(__file__).parent / ".env")
 
-AI_BACKEND = os.getenv("AI_BACKEND", "ollama")
+AI_BACKEND = os.getenv("AI_BACKEND", "groq")
 
 OLLAMA_URL   = os.getenv("OLLAMA_URL",   "http://localhost:11434/api/generate")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
