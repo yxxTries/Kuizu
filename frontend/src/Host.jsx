@@ -9,12 +9,12 @@ export default function Host({ quiz, onEnd }) {
   const ws = useRef(null);
 
     useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // If running in local Vite (localhost / 127.0.0.1) we point straight to 8000
-    // We strip off the vite port (5173 / whatever) and explicitly replace with 8000
-    const hostname = window.location.hostname;
-    const url = `${protocol}//${hostname}:8000/ws/host`;
-    ws.current = new WebSocket(url);
+// Connect to the actual backend URL using WebSockets
+    // If BASE_URL is http://..., we need ws://...
+    // If BASE_URL is https://..., we need wss://...
+    const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+    const wsUrl = baseUrl.replace(/^http/, 'ws') + `/ws/host`;
+    ws.current = new WebSocket(wsUrl);
     
     ws.current.onopen = () => {
       ws.current.send(JSON.stringify({ type: "create", quiz }));
