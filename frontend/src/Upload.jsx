@@ -9,7 +9,7 @@ function fileIsValid(file) {
   return ALLOWED.some((ext) => name.endsWith(ext));
 }
 
-export default function Upload({ onQuizReady }) {
+export default function Upload({ onQuizReady, onHostReady }) {
   const [dragging, setDragging]       = useState(false);
   const [file, setFile]               = useState(null);
   const [loading, setLoading]         = useState(false);
@@ -38,7 +38,7 @@ export default function Upload({ onQuizReady }) {
   const onDragOver  = (e) => { e.preventDefault(); setDragging(true); };
   const onDragLeave = ()  => setDragging(false);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (isHost = false) => {
     if (!file) return;
     setLoading(true);
     setError("");
@@ -59,7 +59,11 @@ export default function Upload({ onQuizReady }) {
     try {
       const quiz = await generateQuiz(file, numQuestions);
       clearInterval(ticker);
-      onQuizReady(quiz);
+      if (isHost) {
+        onHostReady(quiz);
+      } else {
+        onQuizReady(quiz);
+      }
     } catch (err) {
       clearInterval(ticker);
       setError(err.message);
@@ -165,7 +169,7 @@ export default function Upload({ onQuizReady }) {
               ...styles.btn,
               ...((!file || loading) ? styles.btnDisabled : {}),
             }}
-            onClick={handleSubmit}
+            onClick={() => handleSubmit(false)}
             disabled={!file || loading}
           >
             {loading ? (
@@ -181,10 +185,10 @@ export default function Upload({ onQuizReady }) {
               ...styles.btnSecondary,
               ...((!file || loading) ? styles.btnSecondaryDisabled : {}),
             }}
-            onClick={() => {/* TODO: Implement MP Host logic */}}
+            onClick={() => handleSubmit(true)}
             disabled={!file || loading}
           >
-            Host Multiplayer
+            {loading ? "Generating Quiz..." : "Host Multiplayer"}
           </button>
         </div>
 

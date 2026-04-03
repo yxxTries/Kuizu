@@ -1,8 +1,8 @@
 import React, { useState, useRef } from "react";
 import Quiz from "./Quiz.jsx";
 
-export default function Join({ onExit }) {
-  const [pin, setPin] = useState("");
+export default function Join({ onExit, initialPin = "" }) {
+  const [pin, setPin] = useState(initialPin);
   const [name, setName] = useState("");
   const [status, setStatus] = useState("login"); // login, joining, waiting, playing
   const [quiz, setQuiz] = useState(null);
