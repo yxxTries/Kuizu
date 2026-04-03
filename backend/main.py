@@ -147,7 +147,7 @@ async def generate_quiz_endpoint(
     num_questions: int = Form(10),
 ):
     # ── 1. Validate file type ──────────────────────────────────────────────
-    suffix = Path(file.filename).suffix.lower()
+    suffix = Path(file.filename).suffix.lower() # type: ignore
     if suffix not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=400,
@@ -165,7 +165,7 @@ async def generate_quiz_endpoint(
 
     # ── 3. Extract text ────────────────────────────────────────────────────
     try:
-        text = extract_text(file_bytes, file.filename)
+        text = extract_text(file_bytes, file.filename) # type: ignore
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
