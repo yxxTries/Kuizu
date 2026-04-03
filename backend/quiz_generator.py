@@ -104,7 +104,7 @@ def _call_groq(prompt: str) -> str:
                 "model": REAL_GROQ_MODEL,
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.1,
-                "max_tokens": 8192,
+                "max_tokens": 2500,
                 "response_format": {"type": "json_object"},
             },
             timeout=60,
