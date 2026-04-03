@@ -104,33 +104,32 @@ def _call_groq(prompt: str) -> str:
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.7,
                 "max_tokens": 4096,
+                "response_format": {"type": "json_object"},
             },
             timeout=60,
         )
         resp.raise_for_status()
         return resp.json()["choices"][0]["message"]["content"]
     except requests.RequestException as e:
-        error_details = resp.text if 'resp' in locals() else str(e)
+        error_details = resp.text if 'resp' in locals() else str(e) # type: ignore
         raise RuntimeError(f"Groq request failed: {e}. Details: {error_details}") from e
 
 
 def _parse_quiz(raw: str, num_questions: int = 10) -> dict:
     cleaned = re.sub(r"```(?:json)?\s*", "", raw).strip()
     
-    # Sometimes Groq returns valid JSON directly without markdown blocks, 
-    # and the regex match fails if there are newlines or structural differences.
-    # Let's try parsing it directly first!
+    start_idx = cleaned.find('{')
+    end_idx = cleaned.rfind('}')
+    
+    if start_idx == -1 or end_idx == -1:
+        raise ValueError(f"Could not find JSON structure in LLM response. Raw: {raw[:500]}")
+        
+    json_str = cleaned[start_idx:end_idx+1]
+    
     try:
-        data = json.loads(cleaned)
-    except json.JSONDecodeError:
-        # If direct parse fails, fallback to regex extraction
-        match = re.search(r'\{.*"questions"\s*:\s*\[.*\]\s*\}', cleaned, re.DOTALL) 
-        if not match:
-            raise ValueError(f"Could not find JSON in LLM response. Raw: {raw[:500]}")
-        try:
-            data = json.loads(match.group())
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON from LLM: {e}. Raw: {raw[:500]}") from e
+        data = json.loads(json_str)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON from LLM: {e}. Extracted JSON: {json_str[:500]}... Raw: {raw[:500]}") from e
 
     if "questions" not in data or not isinstance(data["questions"], list):
         raise ValueError("LLM response missing 'questions' list.")
