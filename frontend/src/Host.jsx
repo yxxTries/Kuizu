@@ -16,8 +16,16 @@ export default function Host({ quiz, onEnd }) {
     // If BASE_URL is http://..., we need ws://...
     // If BASE_URL is https://..., we need wss://...
     const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
-    const wsUrl = baseUrl.replace(/^http/, 'ws') + `/ws/host`;
-    ws.current = new WebSocket(wsUrl);
+    const wsUrl = baseUrl
+      .replace(/^https?:\/\//, baseUrl.startsWith("https") ? "wss://" : "ws://")
+      + `/ws/host`;
+
+    // Fallback if the user forgot http:// in VITE_BACKEND_URL
+    const finalWsUrl = wsUrl.startsWith("ws") 
+      ? wsUrl 
+      : `wss://${wsUrl.replace(/^\/\//, '')}`;
+
+    ws.current = new WebSocket(finalWsUrl);
     
     ws.current.onopen = () => {
       ws.current.send(JSON.stringify({ type: "create", quiz }));
