@@ -2,14 +2,25 @@ import json
 import os
 import re
 import requests
+from dotenv import load_dotenv
+from pathlib import Path
+import json_repair
 
-AI_BACKEND = os.getenv("AI_BACKEND", "ollama")
+load_dotenv(Path(__file__).parent / ".env")
+
+AI_BACKEND = os.getenv("AI_BACKEND", "groq")
 
 OLLAMA_URL   = os.getenv("OLLAMA_URL",   "http://localhost:11434/api/generate")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL   = os.getenv("GROQ_MODEL",   "llama3-8b-8192")
+# Wait, Render is using the old env var if we had it set in render!
+# Let's completely force the model without using os.getenv just in case Render has GROQ_MODEL set to the old one in its environment variables!
+REAL_GROQ_MODEL = os.getenv("GROQ_MODEL", "llama3-8b-8192")
+if REAL_GROQ_MODEL == "llama3-8b-8192":
+    REAL_GROQ_MODEL = "llama-3.1-8b-instant"
+
 GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions"
 
 MAX_TEXT_CHARS = 4000
@@ -90,31 +101,41 @@ def _call_groq(prompt: str) -> str:
                 "Content-Type": "application/json",
             },
             json={
-                "model": GROQ_MODEL,
+                "model": REAL_GROQ_MODEL,
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.7,
+                "temperature": 0.1,
+                "max_tokens": 2500,
+                "response_format": {"type": "json_object"},
             },
             timeout=60,
         )
         resp.raise_for_status()
         return resp.json()["choices"][0]["message"]["content"]
     except requests.RequestException as e:
-        raise RuntimeError(f"Groq request failed: {e}") from e
+        error_details = resp.text if 'resp' in locals() else str(e) # type: ignore
+        raise RuntimeError(f"Groq request failed: {e}. Details: {error_details}") from e
 
 
 def _parse_quiz(raw: str, num_questions: int = 10) -> dict:
     cleaned = re.sub(r"```(?:json)?\s*", "", raw).strip()
-    match = re.search(r'\{.*"questions"\s*:\s*\[.*\]\s*\}', cleaned, re.DOTALL)
-    if not match:
-        raise ValueError(f"Could not find JSON in LLM response. Raw: {raw[:500]}")
+    
+    start_idx = cleaned.find('{')
+    end_idx = cleaned.rfind('}')
+    
+    if start_idx == -1 or end_idx == -1:
+        raise ValueError(f"Could not find JSON structure in LLM response. Raw: {raw[:500]}")
+        
+    json_str = cleaned[start_idx:end_idx+1]
+    
     try:
-        data = json.loads(match.group())
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid JSON from LLM: {e}. Raw: {raw[:500]}") from e
-    if "questions" not in data or not isinstance(data["questions"], list):
+        data = json_repair.loads(json_str)
+    except Exception as e:
+        raise ValueError(f"Invalid JSON from LLM: {e}. Extracted JSON: {json_str[:500]}... Raw: {raw[:500]}") from e
+
+    if "questions" not in data or not isinstance(data["questions"], list): # type: ignore
         raise ValueError("LLM response missing 'questions' list.")
     valid = []
-    for item in data["questions"]:
+    for item in data["questions"]: # type: ignore
         if not isinstance(item, dict):
             continue
         q = item.get("question", "").strip()

@@ -97,30 +97,65 @@ const scoreStyles = {
   },
 };
 
-export default function Quiz({ quiz, onRestart }) {
+export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, currentQuestionIndex = null, leaderboard = null, isHostMode = false, hostAnswers = {}, triggerNextQuestion = null }) {
   const { questions } = quiz;
   const total = questions.length;
 
-  const [current,   setCurrent]   = useState(0);
-  const [selected,  setSelected]  = useState(null);   // index of chosen answer
-  const [revealed,  setRevealed]  = useState(false);  // show correct/wrong
+  const isMultiplayer = currentQuestionIndex !== null;
+
+  const [localCurrent, setLocalCurrent] = useState(0);
+  const current = isMultiplayer ? currentQuestionIndex : localCurrent;
+
+  const [selected,  setSelected]  = useState(null);   // index of chosen answer 
+  const [revealed,  setRevealed]  = useState(false);  // show correct/wrong     
   const [score,     setScore]     = useState(0);
   const [done,      setDone]      = useState(false);
 
-  const q = questions[current];
+  // When host moves to the next question, reset selection state
+  React.useEffect(() => {
+    if (isMultiplayer) {
+      if (current < total) {
+        setSelected(null);
+        setRevealed(false);
+      } else {
+        setDone(true);
+      }
+    }
+  }, [current, total, isMultiplayer]);
+
+  const q = questions[current < total ? current : total - 1] || questions[0];
 
   const handleSelect = (idx) => {
-    if (revealed) return;
+    if (revealed || isHostMode) return;
     setSelected(idx);
     setRevealed(true);
-    if (idx === q.correct_index) setScore((s) => s + 1);
+    let newScore = score;
+    if (idx === q.correct_index) {
+       newScore += 1;
+       setScore(newScore);
+    }
+    if (onScoreUpdate) {
+       onScoreUpdate(newScore);
+    }
+    if (onAnswerSubmit) {
+       onAnswerSubmit(current, idx);
+    }
   };
 
-  const handleNext = () => {
-    if (current + 1 >= total) {
+  const handleHostNext = () => {
+    setRevealed(true);
+    setTimeout(() => {
+       if (triggerNextQuestion) {
+          triggerNextQuestion();
+       }
+    }, 3000);
+  };
+
+  const handleNextLocal = () => {
+    if (localCurrent + 1 >= total) {
       setDone(true);
     } else {
-      setCurrent((c) => c + 1);
+      setLocalCurrent((c) => c + 1);
       setSelected(null);
       setRevealed(false);
     }
@@ -143,7 +178,13 @@ export default function Quiz({ quiz, onRestart }) {
           Question <strong>{current + 1}</strong> / {total}
         </span>
         <span style={styles.scoreChip}>
-          ⭐ {score}
+          {isHostMode ? (
+            <span onClick={onRestart} style={{ cursor: "pointer", color: "#ff4d4f", fontWeight: 600 }}>
+              Force Quit
+            </span>
+          ) : (
+            <span>⭐ {score}</span>
+          )}
         </span>
       </header>
 
@@ -162,64 +203,117 @@ export default function Quiz({ quiz, onRestart }) {
             const color = CHOICE_COLORS[idx];
             let bg = color.bg;
             let extra = {};
+              let pct = 0;
 
-            if (revealed) {
-              if (idx === q.correct_index) {
-                bg = color.bg;
-                extra = { outline: "4px solid #fff", outlineOffset: "2px", transform: "scale(1.03)" };
-              } else if (idx === selected) {
-                bg = "#2a1a1a";
-                extra = { opacity: 0.6 };
-              } else {
-                bg = "#141420";
-                extra = { opacity: 0.35 };
+              if (isHostMode && hostAnswers) {
+                const values = Object.values(hostAnswers);
+                const totalAnswers = values.reduce((a, b) => a + Number(b || 0), 0);
+                if (totalAnswers > 0) {
+                  const count = Number(hostAnswers[String(idx)] || 0);
+                  pct = Math.round((count / totalAnswers) * 100);
+                }
               }
-            }
 
-            return (
-              <button
-                key={idx}
-                style={{ ...styles.choiceBtn, background: bg, ...extra }}
-                onClick={() => handleSelect(idx)}
-                disabled={revealed}
-              >
-                <span style={styles.choiceShape}>{color.label}</span>
-                <span style={styles.choiceText}>{choice}</span>
-                {revealed && idx === q.correct_index && (
-                  <span style={styles.tick}>✓</span>
-                )}
-                {revealed && idx === selected && idx !== q.correct_index && (
-                  <span style={styles.cross}>✗</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+              if (revealed) {
+                if (idx === q.correct_index) {
+                  bg = color.bg;
+                  extra = { outline: "4px solid #fff", outlineOffset: "2px", transform: "scale(1.03)" };
+                } else if (idx === selected || isHostMode) {
+                  bg = "#2a1a1a";
+                  extra = { opacity: 0.6 };
+                } else {
+                  bg = "#141420";
+                  extra = { opacity: 0.35 };
+                }
+              }
 
-        {/* Feedback + next */}
-        {revealed && (
-          <div style={styles.feedbackRow} key={"fb-" + current}>
-            <div style={selected === q.correct_index ? styles.feedbackCorrect : styles.feedbackWrong}>
-              {selected === q.correct_index
-                ? "✓ Correct!"
-                : `✗ The answer was: ${q.choices[q.correct_index]}`}
-            </div>
-            <button style={styles.nextBtn} onClick={handleNext}>
-              {current + 1 < total ? "Next question →" : "See results →"}
-            </button>
+              return (
+                <button
+                  key={idx}
+                  style={{ ...styles.choiceBtn, background: bg, ...extra, position: "relative", overflow: "hidden" }}
+                  onClick={() => handleSelect(idx)}
+                  disabled={revealed || isHostMode}
+                >
+                  {isHostMode && revealed && (
+                     <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: `${pct}%`, background: "rgba(255, 255, 255, 0.15)", zIndex: 1, transition: "width 0.6s ease-out" }} />
+                  )}
+                  <span style={{ ...styles.choiceShape, position: "relative", zIndex: 2 }}>{color.label}</span>
+                  <span style={{ ...styles.choiceText, position: "relative", zIndex: 2 }}>{choice}</span>
+                  {isHostMode && revealed && (
+                     <span style={{ position: "absolute", right: 20, zIndex: 2, fontWeight: "bold", fontSize: "18px", color: "rgba(255,255,255,0.8)" }}>{pct}%</span>
+                  )}
+                  {revealed && !isHostMode && idx === q.correct_index && (
+                    <span style={{ ...styles.tick, zIndex: 2 }}>&#10003;</span>
+                  )}
+                  {revealed && !isHostMode && idx === selected && idx !== q.correct_index && (
+                    <span style={{ ...styles.cross, zIndex: 2 }}>&#10007;</span>
+                  )}
+                  {isHostMode && revealed && idx === q.correct_index && (
+                    <span style={{ ...styles.tick, zIndex: 2, position: "absolute", right: 70 }}>&#10003;</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
-        )}
-      </main>
 
-      <style>{`
-        @keyframes slideUp {
-          from { opacity:0; transform: translateY(16px); }
-          to   { opacity:1; transform: translateY(0); }
-        }
-      `}</style>
-    </div>
-  );
-}
+          {/* Feedback + next */}
+          {revealed && !isHostMode && (
+            <div style={styles.feedbackRow} key={"fb-" + current}>
+              <div style={selected === q.correct_index ? styles.feedbackCorrect : styles.feedbackWrong}>
+                {selected === q.correct_index
+                  ? "\u2713 Correct!"
+                  : `\u2717 The answer was: ${q.choices[q.correct_index]}`}
+              </div>
+
+              {leaderboard ? (
+                 <div style={styles.miniLeaderboard}>
+                   <h4 style={{ margin: "0 0 10px 0" }}>Live Leaderboard</h4>
+                   {Object.entries(leaderboard)
+                      .sort(([, a], [, b]) => b - a)
+                      .slice(0, 3)
+                      .map(([name, s], i) => (
+                        <div key={name} style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", padding: "4px 0" }}>
+                          <span>{i+1}. {name}</span>
+                          <span>{s} pts</span>
+                        </div>
+                      ))}
+                 </div>
+              ) : null}
+
+              {isMultiplayer ? (
+                <p style={{ textAlign: "center", color: "#8e8ea0", margin: "10px 0" }}>
+                  Waiting for the host to start the next question...
+                </p>
+              ) : (
+                <button style={styles.nextBtn} onClick={handleNextLocal}>
+                  {localCurrent + 1 < total ? "Next question \u2192" : "See results \u2192"}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Host "Next Question" Action */}
+          {isHostMode && !revealed && (
+            <div style={{ textAlign: "center", marginTop: 30 }}>
+              <button
+                style={{ padding: "16px 32px", fontSize: "20px", background: "#7c6fff", color: "#fff", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}
+                onClick={handleHostNext}
+              >
+                {current + 1 === total ? "Reveal & End Game" : "Reveal & Next Question \u2192"}
+              </button>
+            </div>
+          )}
+
+          </main>
+          <style>{`
+            @keyframes slideUp {
+            from { opacity:0; transform: translateY(16px); }
+            to   { opacity:1; transform: translateY(0); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
 const styles = {
   page: {
@@ -372,5 +466,12 @@ const styles = {
     fontFamily: "'DM Sans', sans-serif",
     cursor: "pointer",
     width: "100%",
+  },
+  miniLeaderboard: {
+    background: "#1a1a2e",
+    border: "1px solid #2e2e42",
+    borderRadius: "10px",
+    padding: "12px 16px",
+    color: "#f0ede8",
   },
 };
