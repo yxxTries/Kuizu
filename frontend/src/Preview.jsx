@@ -276,11 +276,12 @@ const cardStyles = {
     fontSize: "16px",
     padding: "4px 6px",
     borderRadius: "6px",
-    opacity: 0.6,
+    opacity: 0.9,
     transition: "opacity 0.15s, background 0.15s",
   },
   deleteBtn: {
-    opacity: 0.4,
+    opacity: 1,
+    color: "#ff4d4f",
   },
   questionText: {
     fontSize: "17px",
@@ -615,7 +616,7 @@ export default function Preview({ quiz, onStart, onBack, intent = "solo" }) {
     <div style={styles.page}>
       {/* Header */}
       <header style={styles.header}>
-        <span style={styles.logo}>QuizAI</span>
+        <span style={styles.logo}>Runnit</span>
         <span style={styles.title}>Review Questions</span>
         <button style={styles.startBtn} onClick={handleStart}>
           {intent === "host" ? "Create Lobby \u2192" : "Start Quiz \u2192"}

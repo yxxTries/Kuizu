@@ -8,30 +8,56 @@ const CHOICE_COLORS = [
   { bg: "#26890c", hover: "#1b6408", label: "■" }, // green  — square
 ];
 
-function ProgressBar({ current, total }) {
-  const pct = ((current) / total) * 100;
-  return (
-    <div style={pbStyles.track}>
-      <div style={{ ...pbStyles.fill, width: `${pct}%` }} />
-    </div>
-  );
-}
-
 const pbStyles = {
+  container: {
+    padding: "0 32px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    width: "100%",
+    boxSizing: "border-box",
+  },
+  textRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    fontSize: "14px",
+    fontWeight: "bold",
+    color: "#8e8ea0",
+    textTransform: "uppercase",
+    letterSpacing: "1px",
+    fontFamily: "'Syne', sans-serif",
+  },
   track: {
     width: "100%",
-    height: "4px",
-    background: "#1e1e2e",
-    borderRadius: "2px",
+    height: "8px",
+    background: "#181825",
+    borderRadius: "4px",
     overflow: "hidden",
+    border: "1px solid #2e2e42",
   },
   fill: {
     height: "100%",
-    background: "#7c6fff",
-    borderRadius: "2px",
-    transition: "width 0.4s ease",
+    background: "linear-gradient(90deg, #6153cc, #7c6fff)",
+    borderRadius: "4px",
+    transition: "width 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
   },
 };
+
+function ProgressBar({ current, total }) {
+  const pct = Math.max(0, Math.min(100, (current / total) * 100));
+  const remaining = total - current;
+  return (
+    <div style={pbStyles.container}>
+      <div style={pbStyles.textRow}>
+        <span style={{ color: "#7c6fff" }}>{current} Done</span>
+        <span>{remaining} Left</span>
+      </div>
+      <div style={pbStyles.track}>
+        <div style={{ ...pbStyles.fill, width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
 
 function ScoreScreen({ score, total, onRestart }) {
   const pct = Math.round((score / total) * 100);
@@ -171,24 +197,22 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
 
   return (
     <div style={styles.page}>
-      {/* Top bar */}
+      {/* Top bar (minimalist loading screen) */}
       <header style={styles.header}>
-        <span style={styles.logo}>QuizAI</span>
-        <span style={styles.counter}>
-          Question <strong>{current + 1}</strong> / {total}
-        </span>
-        <span style={styles.scoreChip}>
-          {isHostMode ? (
-            <span onClick={onRestart} style={{ cursor: "pointer", color: "#ff4d4f", fontWeight: 600 }}>
-              Force Quit
-            </span>
-          ) : (
-            <span>⭐ {score}</span>
-          )}
-        </span>
+        <div style={styles.headerTop}>
+          <span style={styles.logo}>Runnit</span>
+          <span style={styles.scoreChip}>
+            {isHostMode ? (
+              <span onClick={onRestart} style={{ cursor: "pointer", color: "#ff4d4f", fontWeight: 600 }}>
+                End Game
+              </span>
+            ) : (
+              <span>🌟 {score}</span>
+            )}
+          </span>
+        </div>
+        <ProgressBar current={current + (revealed ? 1 : 0)} total={total} />
       </header>
-
-      <ProgressBar current={current + (revealed ? 1 : 0)} total={total} />
 
       <main style={styles.main}>
         {/* Question card */}
@@ -326,21 +350,25 @@ const styles = {
   },
   header: {
     display: "flex",
+    flexDirection: "column",
+    padding: "24px 0",
+    gap: "24px",
+    background: "#12121c",
+    borderBottom: "1px solid #1e1e2e",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+  },
+  headerTop: {
+    display: "flex",
+    justifyContent: "space-between",
     alignItems: "center",
-    padding: "18px 32px",
-    gap: "16px",
+    padding: "0 32px",
   },
   logo: {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 800,
-    fontSize: "20px",
+    fontSize: "24px",
     color: "#f0ede8",
     letterSpacing: "-0.5px",
-    marginRight: "auto",
-  },
-  counter: {
-    fontSize: "14px",
-    color: "#8e8ea0",
   },
   scoreChip: {
     background: "#1a1a2e",
@@ -362,29 +390,37 @@ const styles = {
     boxSizing: "border-box",
   },
   questionCard: {
-    background: "#12121c",
-    border: "1px solid #1e1e2e",
-    borderRadius: "16px",
-    padding: "28px 32px",
+    background: "#181825",
+    border: "1px solid #2e2e42",
+    borderRadius: "24px",
+    padding: "48px 40px",
     width: "100%",
-    marginBottom: "28px",
+    marginBottom: "40px",
     animation: "slideUp 0.35s ease both",
     boxSizing: "border-box",
+    textAlign: "center",
+    boxShadow: "0 12px 48px rgba(0,0,0,0.3)",
   },
   qNumber: {
+    display: "inline-block",
+    background: "rgba(124, 111, 255, 0.15)",
+    padding: "6px 16px",
+    borderRadius: "20px",
     fontFamily: "'Syne', sans-serif",
     fontWeight: 700,
-    fontSize: "13px",
+    fontSize: "16px",
     color: "#7c6fff",
-    marginBottom: "10px",
-    letterSpacing: "0.5px",
+    marginBottom: "24px",
+    letterSpacing: "1px",
+    textTransform: "uppercase",
   },
   questionText: {
-    fontSize: "22px",
-    fontWeight: 500,
-    lineHeight: 1.4,
+    fontSize: "36px",
+    fontWeight: 700,
+    lineHeight: 1.3,
     margin: 0,
     color: "#f0ede8",
+    fontFamily: "'Syne', sans-serif",
   },
   grid: {
     display: "grid",

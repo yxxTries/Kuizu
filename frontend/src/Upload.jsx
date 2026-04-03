@@ -90,7 +90,7 @@ export default function Upload({ onQuizReady, onHostReady }) {
     <div style={styles.page}>
       {/* Header */}
       <header style={styles.header}>
-        <span style={styles.logo}>QuizAI</span>
+        <span style={styles.logo}>Runnit</span>
         <span style={styles.tagline}>slides → quiz in seconds</span>
       </header>
 
@@ -100,7 +100,7 @@ export default function Upload({ onQuizReady, onHostReady }) {
           <span style={styles.accent}>Get a quiz.</span>
         </h1>
         <p style={styles.sub}>
-          Upload a PDF or PowerPoint to get a quiz made by QuizAI. You can edit it as you like before playing.
+          Upload a PDF or PowerPoint to get a quiz made by Runnit. You can edit it as you like before playing.
         </p>
 
         {/* Drop zone */}
