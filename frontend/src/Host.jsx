@@ -81,7 +81,7 @@ export default function Host({ quiz, onEnd }) {
     }
   };
 
-  const joinUrl = `http://${window.location.host}/?pin=${pin}`;
+  const joinUrl = `${window.location.protocol}//${window.location.host}/?pin=${pin}`;
 
   return (
     <div style={{ padding: 40, textAlign: "center", minHeight: "100vh", display: "flex", flexDirection: "column", gap: 20 }}>
