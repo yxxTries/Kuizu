@@ -15,13 +15,19 @@ export default function Upload({ onQuizReady, onHostReady }) {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
   const [progress, setProgress]       = useState("");
-  const [numQuestions, setNumQuestions] = useState(10);
+  const [numQuestions, setNumQuestions] = useState(5);
+  const [prompt, setPrompt]           = useState("");
   const inputRef                      = useRef();
 
   const pickFile = (f) => {
     setError("");
     if (!fileIsValid(f)) {
       setError("Only .pdf and .pptx files are supported.");
+      return;
+    }
+    // 20 MB size limit check (20 * 1024 * 1024)
+    if (f.size > 20 * 1024 * 1024) {
+      setError("File exceeds the 20MB limit.");
       return;
     }
     setFile(f);
@@ -70,7 +76,7 @@ export default function Upload({ onQuizReady, onHostReady }) {
     }, 3000);
 
     try {
-      const quiz = await generateQuiz(file, numQuestions);
+      const quiz = await generateQuiz(file, numQuestions, prompt);
       clearInterval(ticker);
       if (isHost) {
         onHostReady(quiz);
@@ -126,9 +132,9 @@ export default function Upload({ onQuizReady, onHostReady }) {
           {file ? (
             <div style={styles.fileInfo}>
               <span style={styles.fileIcon}>{file.name.endsWith(".pdf") ? "📄" : "📊"}</span>
-              <div>
+              <div style={{ flex: 1, textAlign: "left" }}>
                 <div style={styles.fileName}>{file.name}</div>
-                <div style={styles.fileSize}>{(file.size / 1024).toFixed(0)} KB</div>
+                <div style={styles.fileSize}>{(file.size / 1024 / 1024).toFixed(2)} MB</div>
               </div>
               {!loading && (
                 <button
@@ -146,6 +152,39 @@ export default function Upload({ onQuizReady, onHostReady }) {
               <div style={styles.dropMeta}>PDF · PPTX · max 20 MB</div>
             </div>
           )}
+        </div>
+
+        {/* Custom Prompt Section */}
+        <div style={styles.promptWrap}>
+          <div style={styles.promptHeader}>
+            <span style={styles.promptLabel}>Custom Instructions</span>
+            <span style={{
+              ...styles.promptCounter, 
+              color: prompt.length >= 200 ? "#ff4d4f" : "#8e8ea0"
+            }}>
+              {prompt.length} / 200
+            </span>
+          </div>
+          <textarea
+            style={{
+              ...styles.promptInput,
+              borderColor: prompt.length >= 200 ? "#ff4d4f" : "#2e2e42",
+            }}
+            value={prompt}
+            maxLength={200}
+            onChange={(e) => setPrompt(e.target.value)}
+            disabled={loading}
+            onFocus={(e) => {
+              if (prompt.length < 200) {
+                e.currentTarget.style.borderColor = "#7c6fff";
+                e.currentTarget.style.boxShadow = "0 0 0 4px rgba(124, 111, 255, 0.1)";
+              }
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = prompt.length >= 200 ? "#ff4d4f" : "#2e2e42";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          />
         </div>
 
         {/* Question count slider */}
@@ -428,6 +467,50 @@ const styles = {
     fontSize: "12px",
     color: "#3d3d5c",
     paddingTop: "2px",
+  },
+  promptWrap: {
+    width: "100%",
+    maxWidth: "520px",
+    marginBottom: "20px",
+    background: "#181825",
+    border: "1px solid #2e2e42",
+    borderRadius: "16px",
+    padding: "20px",
+    boxSizing: "border-box",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+    animation: "fadeUp 0.6s ease both",
+  },
+  promptHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "12px",
+  },
+  promptLabel: {
+    fontSize: "15px",
+    fontWeight: 600,
+    color: "#f0ede8",
+    fontFamily: "'Syne', sans-serif",
+  },
+  promptCounter: {
+    fontSize: "13px",
+    fontWeight: 500,
+    transition: "color 0.2s ease",
+  },
+  promptInput: {
+    width: "100%",
+    minHeight: "80px",
+    background: "#12121c",
+    border: "2px solid #2e2e42",
+    borderRadius: "12px",
+    padding: "16px",
+    color: "#f0ede8",
+    fontSize: "15px",
+    fontFamily: "'DM Sans', sans-serif",
+    resize: "vertical",
+    outline: "none",
+    boxSizing: "border-box",
+    transition: "border-color 0.2s ease, box-shadow 0.2s ease",
   },
   error: {
     background: "#1e0f0f",

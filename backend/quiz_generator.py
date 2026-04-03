@@ -51,6 +51,8 @@ For each question verify that:
 2. No two choices could both be considered correct.
 3. No choices are duplicates or paraphrases of each other.
 
+{custom_instructions}
+
 Return ONLY valid JSON in this exact format with no other text:
 
 {{"questions":[
@@ -63,12 +65,19 @@ Document content:
 {document_text}"""
 
 
-def generate_quiz(document_text: str, num_questions: int = 10) -> dict:
+def generate_quiz(document_text: str, num_questions: int = 10, custom_instructions: str = None) -> dict:
     num_questions = max(1, min(num_questions, 20))
     truncated = document_text[:MAX_TEXT_CHARS]
+    
+    ins_block = ""
+    if custom_instructions:
+        # Heavily sanitize or just inject
+        ins_block = f"\nATTENTION! The user added custom instructions for this quiz:\n>>> {custom_instructions} <<<\nMake absolutely sure to adapt the quiz based on these instructions."
+
     prompt = PROMPT_TEMPLATE.format(
         num_questions=num_questions,
         document_text=truncated,
+        custom_instructions=ins_block
     )
     if AI_BACKEND == "groq":
         raw = _call_groq(prompt)

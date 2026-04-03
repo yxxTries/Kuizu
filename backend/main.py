@@ -145,6 +145,7 @@ async def websocket_join(websocket: WebSocket, pin: str, name: str):
 async def generate_quiz_endpoint(
     file: UploadFile = File(...),
     num_questions: int = Form(10),
+    custom_instructions: str = Form(None)
 ):
     # ── 1. Validate file type ──────────────────────────────────────────────
     suffix = Path(file.filename).suffix.lower() # type: ignore
@@ -163,6 +164,13 @@ async def generate_quiz_endpoint(
             detail=f"File is {size_mb:.1f} MB. Maximum allowed size is {MAX_FILE_SIZE_MB} MB.",
         )
 
+    # Optional prompt length validation
+    if custom_instructions and len(custom_instructions) > 200:
+        raise HTTPException(
+            status_code=400,
+            detail="Custom instructions must be 200 characters or less."
+        )
+
     # ── 3. Extract text ────────────────────────────────────────────────────
     try:
         text = extract_text(file_bytes, file.filename) # type: ignore
@@ -171,7 +179,7 @@ async def generate_quiz_endpoint(
 
     # ── 4. Generate quiz ───────────────────────────────────────────────────
     try:
-        quiz = generate_quiz(text, num_questions=num_questions)
+        quiz = generate_quiz(text, num_questions=num_questions, custom_instructions=custom_instructions)
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except ValueError as e:
