@@ -143,39 +143,45 @@ async def websocket_join(websocket: WebSocket, pin: str, name: str):
 
 @app.post("/generate-quiz")
 async def generate_quiz_endpoint(
-    file: UploadFile = File(...),
+    file: UploadFile = File(None),
     num_questions: int = Form(10),
     custom_instructions: str = Form(None)
 ):
-    # ── 1. Validate file type ──────────────────────────────────────────────
-    suffix = Path(file.filename).suffix.lower() # type: ignore
-    if suffix not in ALLOWED_EXTENSIONS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unsupported file type '{suffix}'. Please upload a .pdf or .pptx file.",
-        )
+    if not file and not custom_instructions:
+        raise HTTPException(status_code=400, detail="Must provide either a file or custom instructions.")
 
-    # ── 2. Read file bytes ─────────────────────────────────────────────────
-    file_bytes = await file.read()
-    size_mb = len(file_bytes) / (1024 * 1024)
-    if size_mb > MAX_FILE_SIZE_MB:
-        raise HTTPException(
-            status_code=413,
-            detail=f"File is {size_mb:.1f} MB. Maximum allowed size is {MAX_FILE_SIZE_MB} MB.",
-        )
+    # ── 1. Validate file type & size if provided ───────────────────────────
+    text = ""
+    if file:
+        suffix = Path(file.filename).suffix.lower() # type: ignore
+        if suffix not in ALLOWED_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported file type '{suffix}'. Please upload a .pdf or .pptx file.",
+            )
+
+        file_bytes = await file.read()
+        size_mb = len(file_bytes) / (1024 * 1024)
+        if size_mb > MAX_FILE_SIZE_MB:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File is {size_mb:.1f} MB. Maximum allowed size is {MAX_FILE_SIZE_MB} MB.",
+            )
+        
+        try:
+            text = extract_text(file_bytes, file.filename) # type: ignore
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
+    else:
+        # If no file, we just use the custom instructions as the context text
+        text = custom_instructions
 
     # Optional prompt length validation
-    if custom_instructions and len(custom_instructions) > 200:
+    if custom_instructions and len(custom_instructions) > 4000:
         raise HTTPException(
             status_code=400,
-            detail="Custom instructions must be 200 characters or less."
+            detail="Custom instructions must be 4000 characters or less."
         )
-
-    # ── 3. Extract text ────────────────────────────────────────────────────
-    try:
-        text = extract_text(file_bytes, file.filename) # type: ignore
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
 
     # ── 4. Generate quiz ───────────────────────────────────────────────────
     try:

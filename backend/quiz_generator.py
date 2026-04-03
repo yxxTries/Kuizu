@@ -69,6 +69,10 @@ def generate_quiz(document_text: str, num_questions: int = 10, custom_instructio
     num_questions = max(1, min(num_questions, 20))
     truncated = document_text[:MAX_TEXT_CHARS]
     
+    print("----- EXTRACTED TEXT -----")
+    print(truncated)
+    print("--------------------------")
+    
     ins_block = ""
     if custom_instructions:
         # Heavily sanitize or just inject

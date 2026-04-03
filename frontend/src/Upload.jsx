@@ -45,7 +45,7 @@ export default function Upload({ onQuizReady, onHostReady }) {
   const onDragLeave = ()  => setDragging(false);
 
   const handleSubmit = async (isHost = false) => {
-    if (!file) {
+    if (!file && !prompt.trim()) {
       const dummyQuestions = Array.from({ length: numQuestions }, (_, i) => ({
         question: `Question ${i + 1}`,
         choices: ["Option a", "Option b", "Option c", "Option d"],
@@ -157,31 +157,31 @@ export default function Upload({ onQuizReady, onHostReady }) {
         {/* Custom Prompt Section */}
         <div style={styles.promptWrap}>
           <div style={styles.promptHeader}>
-            <span style={styles.promptLabel}>Custom Instructions</span>
+            <span style={styles.promptLabel}>Prompt / Context Text</span>
             <span style={{
               ...styles.promptCounter, 
-              color: prompt.length >= 200 ? "#ff4d4f" : "#8e8ea0"
+              color: prompt.length >= 4000 ? "#ff4d4f" : "#8e8ea0"
             }}>
-              {prompt.length} / 200
+              {prompt.length} / 4000
             </span>
           </div>
           <textarea
             style={{
               ...styles.promptInput,
-              borderColor: prompt.length >= 200 ? "#ff4d4f" : "#2e2e42",
+              borderColor: prompt.length >= 4000 ? "#ff4d4f" : "#2e2e42",
             }}
             value={prompt}
-            maxLength={200}
+            maxLength={4000}
             onChange={(e) => setPrompt(e.target.value)}
             disabled={loading}
             onFocus={(e) => {
-              if (prompt.length < 200) {
+              if (prompt.length < 4000) {
                 e.currentTarget.style.borderColor = "#7c6fff";
                 e.currentTarget.style.boxShadow = "0 0 0 4px rgba(124, 111, 255, 0.1)";
               }
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = prompt.length >= 200 ? "#ff4d4f" : "#2e2e42";
+              e.currentTarget.style.borderColor = prompt.length >= 4000 ? "#ff4d4f" : "#2e2e42";
               e.currentTarget.style.boxShadow = "none";
             }}
           />
@@ -231,7 +231,7 @@ export default function Upload({ onQuizReady, onHostReady }) {
                 <span style={styles.spinner} />
                 {progress}
               </span>
-            ) : file ? "Play Solo" : "Play Solo (create without file attachment)"}
+            ) : file || prompt.trim() ? "Generate & Play Solo" : "Play Sample Solo"}
           </button>
           
           <button
@@ -242,12 +242,12 @@ export default function Upload({ onQuizReady, onHostReady }) {
             onClick={() => handleSubmit(true)}
             disabled={loading}
           >
-            {loading ? "Generating Quiz..." : file ? "Host Multiplayer" : "Host Multiplayer"}
+            {loading ? "Generating Quiz..." : file || prompt.trim() ? "Generate & Host Multiplayer" : "Host Sample Multiplayer"}
           </button>
         </div>
 
         <p style={styles.hint}>
-          Runs locally · No data stored · Free
+          Runs locally / Groq API · No data stored · Free
         </p>
       </main>
 
@@ -501,7 +501,7 @@ const styles = {
     width: "100%",
     minHeight: "80px",
     background: "#12121c",
-    border: "2px solid #2e2e42",
+    borderStyle: "solid", borderWidth: "2px", borderColor: "#2e2e42",
     borderRadius: "12px",
     padding: "16px",
     color: "#f0ede8",

@@ -9,7 +9,9 @@ const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
  */
 export async function generateQuiz(file, numQuestions = 10, instructions = "") {
   const formData = new FormData();
-  formData.append("file", file);
+  if (file) {
+    formData.append("file", file);
+  }
   formData.append("num_questions", String(numQuestions));
   if (instructions && instructions.trim() !== "") {
     formData.append("custom_instructions", instructions.trim());
