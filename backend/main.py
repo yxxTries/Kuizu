@@ -115,6 +115,18 @@ async def websocket_join(websocket: WebSocket, pin: str, name: str):
                             })
                         except Exception:
                             pass
+            elif data.get("type") == "answer_submit":
+                room = manager.get_room(pin)
+                if room and "host" in room:
+                    try:
+                        await room["host"].send_json({
+                            "type": "answer_submit",
+                            "name": name,
+                            "questionIndex": data.get("questionIndex"),
+                            "optionIndex": data.get("optionIndex")
+                        })
+                    except Exception:
+                        pass
     except WebSocketDisconnect:
         await manager.remove_player(pin, name)
         room = manager.get_room(pin)

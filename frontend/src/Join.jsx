@@ -61,14 +61,21 @@ export default function Join({ onExit, initialPin = "" }) {
     }
   };
 
+  const handleAnswerSubmit = (questionIndex, optionIndex) => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({ type: "answer_submit", questionIndex, optionIndex }));
+    }
+  };
+
   if (status === "playing" && quiz) {
     return (
       <div style={{ position: "relative" }}>
         {/* We reuse the Quiz component */}
-        <Quiz 
-          quiz={quiz} 
-          onRestart={() => { if(ws.current) ws.current.close(); onExit(); }} 
-          onScoreUpdate={handleScoreUpdate} 
+        <Quiz
+          quiz={quiz}
+          onRestart={() => { if(ws.current) ws.current.close(); onExit(); }}
+          onScoreUpdate={handleScoreUpdate}
+          onAnswerSubmit={handleAnswerSubmit}
           currentQuestionIndex={currentQuestionIndex}
           leaderboard={leaderboard}
         />

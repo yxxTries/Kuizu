@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import Quiz from "./Quiz.jsx";
 
 export default function Host({ quiz, onEnd }) {
   const [pin, setPin] = useState(null);
   const [players, setPlayers] = useState([]);
   const [scores, setScores] = useState({});
+  const [hostAnswers, setHostAnswers] = useState({});
   const [status, setStatus] = useState("connecting"); // connecting, lobby, playing
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const ws = useRef(null);
@@ -35,10 +37,25 @@ export default function Host({ quiz, onEnd }) {
         setScores(data.scores);
       } else if (data.type === "score_update") {
         setScores(s => ({ ...s, [data.name]: data.score }));
-      }
-    };
-    
-    ws.current.onerror = (err) => {
+      } else if (data.type === "answer_submit") {
+          console.log("Host received answer_submit!", data);
+          setHostAnswers(prev => {
+            const qIdx = String(data.questionIndex);
+            const oIdx = String(data.optionIndex);
+            const currentQ = prev[qIdx] || {};
+            const currentO = currentQ[oIdx] || 0;
+            return {
+              ...prev,
+              [qIdx]: {
+                ...currentQ,
+                [oIdx]: currentO + 1
+              }
+            };
+          });
+        }
+      };
+
+      ws.current.onerror = (err) => {
       console.error("WebSocket Error:", err);
       setStatus("error");
     }
@@ -57,7 +74,7 @@ export default function Host({ quiz, onEnd }) {
     const nextIdx = currentQuestionIndex + 1;
     if (nextIdx >= quiz.questions.length) {
       ws.current.send(JSON.stringify({ type: "end_game" }));
-      onEnd(); // End game view or just return to lobby
+      setStatus("results"); // Show the final leaderboard
     } else {
       setCurrentQuestionIndex(nextIdx);
       ws.current.send(JSON.stringify({ type: "next_question", index: nextIdx }));
@@ -82,8 +99,7 @@ export default function Host({ quiz, onEnd }) {
 
       {status === "lobby" && pin && (
          <>
-           <h2>Join at <span style={{color: "#7c6fff"}}>{joinUrl}</span></h2>
-           <h3 style={{ fontSize: "48px", margin: "10px 0" }}>PIN: {pin}</h3>
+             <h2>Join at <a href={joinUrl} target="_blank" rel="noopener noreferrer" style={{color: "#7c6fff", textDecoration: "underline"}}>{joinUrl}</a></h2>
            
            <div style={{ background: "#fff", padding: "16px", borderRadius: "16px", display: "inline-block", margin: "0 auto" }}>
              <QRCodeSVG value={joinUrl} size={256} />
@@ -122,23 +138,65 @@ export default function Host({ quiz, onEnd }) {
       )}
 
       {status === "playing" && (
-         <>
-            <h2>Live Leaderboard</h2>
-            <div style={{ maxWidth: "500px", width: "100%", margin: "0 auto" }}>
-              {players.sort((a, b) => scores[b] - scores[a]).map((p, i) => (
-                <div key={p} style={{ display: "flex", justifyContent: "space-between", background: "#1e1e2e", padding: "16px 24px", margin: "10px auto", borderRadius: 8, fontSize: "20px" }}>
-                  <span>{i + 1}. {p}</span>
-                  <span style={{ fontWeight: "bold" }}>{scores[p]} pts</span>
-                </div>
-              ))}
-            </div>
-            {currentQuestionIndex < quiz.questions.length - 1 ? (
-              <button onClick={handleNext} style={{ padding: "12px 24px", marginTop: 40, background: "#7c6fff", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: "20px" }}>Next Question &rarr;</button>
-            ) : (
-              <button onClick={handleNext} style={{ padding: "12px 24px", marginTop: 40, background: "#7c6fff", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: "20px" }}>End Game</button>
-            )}
-            <button onClick={onEnd} style={{ padding: "12px 24px", marginTop: 10, background: "#2e2e42", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" }}>Force Quit</button>
-         </>
+         <div style={{ flex: 1, position: "relative", textAlign: "left" }}>
+            <Quiz 
+               quiz={quiz} 
+               isHostMode={true}
+               onRestart={() => { 
+                 if(ws.current) ws.current.send(JSON.stringify({ type: "end_game" })); 
+                 onEnd(); 
+               }}
+               currentQuestionIndex={currentQuestionIndex}
+               leaderboard={scores}
+               hostAnswers={hostAnswers[currentQuestionIndex] || {}}
+               triggerNextQuestion={handleNext}
+            />
+         </div>
+      )}
+
+      {status === "results" && (
+         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", animation: "slideUp 0.6s ease" }}>
+           <h2 style={{ fontSize: "48px", marginBottom: "40px", color: "#f0ede8", fontFamily: "'Syne', sans-serif" }}>Final Leaderboard</h2>
+           <div style={{ width: "100%", maxWidth: "600px", background: "#12121c", borderRadius: "16px", padding: "20px" }}>
+             {Object.entries(scores)
+               .sort(([, a], [, b]) => b - a)
+               .map(([name, score], i) => {
+                 let crownColor = "";
+                 let textColor = "#8e8ea0";
+                 if (i === 0) { crownColor = "#FFD700"; textColor = "#FFD700"; }
+                 else if (i === 1) { crownColor = "#C0C0C0"; textColor = "#C0C0C0"; }
+                 else if (i === 2) { crownColor = "#CD7F32"; textColor = "#CD7F32"; }
+                 
+                 return (
+                   <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px", borderBottom: i < Object.entries(scores).length - 1 ? "1px solid #2e2e42" : "none", background: i === 0 ? "rgba(124, 111, 255, 0.1)" : "transparent", borderRadius: "8px", marginBottom: "8px" }}>
+                     <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+                       <div style={{ width: "40px", display: "flex", justifyContent: "center" }}>
+                          {crownColor ? (
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill={crownColor} xmlns="http://www.w3.org/2000/svg">
+                              <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5ZM19 19C19 19.5523 18.5523 20 18 20H6C5.44772 20 5 19.5523 5 19V18H19V19Z" />
+                            </svg>
+                          ) : (
+                            <span style={{ fontSize: "24px", color: textColor }}>{i + 1}.</span>
+                          )}
+                       </div>
+                       <span style={{ fontSize: "24px", fontWeight: i < 3 ? "bold" : "normal", color: i === 0 ? "#7c6fff" : "#fff" }}>{name}</span>
+                     </div>
+                     <span style={{ fontSize: "28px", fontWeight: "bold", color: textColor }}>{score} pts</span>
+                   </div>
+                 );
+               })}
+             {Object.keys(scores).length === 0 && <p style={{color: "#8e8ea0"}}>No final scores available.</p>}
+           </div>
+           <button onClick={onEnd} style={{ marginTop: 40, padding: "16px 32px", fontSize: "20px", background: "transparent", color: "#6b6b7e", border: "1px solid #4a4a5e", borderRadius: 12, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+             Exit Game
+           </button>
+           <style>{`
+             @keyframes slideUp {
+               from { opacity:0; transform: translateY(16px); }
+               to   { opacity:1; transform: translateY(0); }
+             }
+           `}</style>
+         </div>
       )}
     </div>
   );
