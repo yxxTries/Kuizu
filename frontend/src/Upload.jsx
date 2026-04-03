@@ -160,7 +160,7 @@ export default function Upload({ onQuizReady, onHostReady }) {
             <span style={styles.promptLabel}>Prompt / Context Text</span>
             <span style={{
               ...styles.promptCounter, 
-              color: prompt.length >= 4000 ? "#ff4d4f" : "#8e8ea0"
+              color: prompt.length >= 4000 ? "#FF6B6B" : "#B0BAC3"
             }}>
               {prompt.length} / 4000
             </span>
@@ -168,7 +168,7 @@ export default function Upload({ onQuizReady, onHostReady }) {
           <textarea
             style={{
               ...styles.promptInput,
-              borderColor: prompt.length >= 4000 ? "#ff4d4f" : "#2e2e42",
+              borderColor: prompt.length >= 4000 ? "#FF6B6B" : "#0F3460",
             }}
             value={prompt}
             maxLength={4000}
@@ -176,12 +176,12 @@ export default function Upload({ onQuizReady, onHostReady }) {
             disabled={loading}
             onFocus={(e) => {
               if (prompt.length < 4000) {
-                e.currentTarget.style.borderColor = "#7c6fff";
+                e.currentTarget.style.borderColor = "#00D2D3";
                 e.currentTarget.style.boxShadow = "0 0 0 4px rgba(124, 111, 255, 0.1)";
               }
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = prompt.length >= 4000 ? "#ff4d4f" : "#2e2e42";
+              e.currentTarget.style.borderColor = prompt.length >= 4000 ? "#FF6B6B" : "#0F3460";
               e.currentTarget.style.boxShadow = "none";
             }}
           />
@@ -262,7 +262,7 @@ export default function Upload({ onQuizReady, onHostReady }) {
           appearance: none;
           width: 100%;
           height: 4px;
-          background: #2e2e42;
+          background: #0F3460;
           border-radius: 2px;
           outline: none;
           cursor: pointer;
@@ -273,18 +273,18 @@ export default function Upload({ onQuizReady, onHostReady }) {
           width: 16px;
           height: 16px;
           border-radius: 50%;
-          background: #7c6fff;
+          background: #00D2D3;
           cursor: pointer;
-          border: 2px solid #0a0a0f;
-          box-shadow: 0 0 0 2px #7c6fff44;
+          border: 2px solid #1A1A2E;
+          box-shadow: 0 0 0 2px #00D2D344;
         }
         input[type=range]::-moz-range-thumb {
           width: 16px;
           height: 16px;
           border-radius: 50%;
-          background: #7c6fff;
+          background: #00D2D3;
           cursor: pointer;
-          border: 2px solid #0a0a0f;
+          border: 2px solid #1A1A2E;
         }
         input[type=range]:disabled {
           opacity: 0.4;
@@ -298,8 +298,8 @@ export default function Upload({ onQuizReady, onHostReady }) {
 const styles = {
   page: {
     minHeight: "100vh",
-    background: "#0a0a0f",
-    color: "#f0ede8",
+    background: "#1A1A2E",
+    color: "#F1F2F6",
     fontFamily: "'DM Sans', sans-serif",
     display: "flex",
     flexDirection: "column",
@@ -315,12 +315,12 @@ const styles = {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 800,
     fontSize: "22px",
-    color: "#f0ede8",
+    color: "#F1F2F6",
     letterSpacing: "-0.5px",
   },
   tagline: {
     fontSize: "13px",
-    color: "#6b6b7e",
+    color: "#B0BAC3",
     fontWeight: 400,
   },
   main: {
@@ -339,15 +339,15 @@ const styles = {
     lineHeight: 1.1,
     textAlign: "center",
     marginBottom: "20px",
-    color: "#f0ede8",
+    color: "#F1F2F6",
     letterSpacing: "-1.5px",
   },
   accent: {
-    color: "#7c6fff",
+    color: "#00D2D3",
   },
   sub: {
     fontSize: "17px",
-    color: "#8e8ea0",
+    color: "#B0BAC3",
     textAlign: "center",
     maxWidth: "480px",
     lineHeight: 1.6,
@@ -357,9 +357,9 @@ const styles = {
     width: "100%",
     maxWidth: "520px",
     minHeight: "180px",
-    border: "2px dashed #2e2e42",
+    border: "2px dashed #0F3460",
     borderRadius: "16px",
-    background: "#12121c",
+    background: "#16213E",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -370,11 +370,11 @@ const styles = {
     boxSizing: "border-box",
   },
   dropzoneDragging: {
-    borderColor: "#7c6fff",
-    background: "#16162a",
+    borderColor: "#00D2D3",
+    background: "#1A1A2E",
   },
   dropzoneHasFile: {
-    borderColor: "#3d3d5c",
+    borderColor: "#0F3460",
     borderStyle: "solid",
   },
   dropPrompt: {
@@ -386,16 +386,16 @@ const styles = {
   },
   dropIcon: {
     fontSize: "32px",
-    color: "#3d3d5c",
+    color: "#0F3460",
   },
   dropText: {
     fontSize: "16px",
-    color: "#6b6b7e",
+    color: "#B0BAC3",
     fontWeight: 500,
   },
   dropMeta: {
     fontSize: "13px",
-    color: "#3d3d5c",
+    color: "#0F3460",
   },
   fileInfo: {
     display: "flex",
@@ -410,19 +410,19 @@ const styles = {
   fileName: {
     fontSize: "15px",
     fontWeight: 500,
-    color: "#f0ede8",
+    color: "#F1F2F6",
     wordBreak: "break-all",
   },
   fileSize: {
     fontSize: "13px",
-    color: "#6b6b7e",
+    color: "#B0BAC3",
     marginTop: "2px",
   },
   clearBtn: {
     marginLeft: "auto",
     background: "none",
     border: "none",
-    color: "#6b6b7e",
+    color: "#B0BAC3",
     cursor: "pointer",
     fontSize: "18px",
     padding: "4px 8px",
@@ -433,7 +433,7 @@ const styles = {
     width: "100%",
     maxWidth: "520px",
     marginBottom: "20px",
-    background: "#12121c",
+    background: "#16213E",
     border: "1px solid #1e1e2e",
     borderRadius: "14px",
     padding: "18px 22px",
@@ -447,14 +447,14 @@ const styles = {
   },
   sliderLabel: {
     fontSize: "14px",
-    color: "#8e8ea0",
+    color: "#B0BAC3",
     fontWeight: 500,
   },
   sliderValue: {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 800,
     fontSize: "22px",
-    color: "#7c6fff",
+    color: "#00D2D3",
     lineHeight: 1,
   },
   slider: {
@@ -465,15 +465,15 @@ const styles = {
   sliderTicks: {
     position: "relative",
     fontSize: "12px",
-    color: "#3d3d5c",
+    color: "#0F3460",
     paddingTop: "2px",
   },
   promptWrap: {
     width: "100%",
     maxWidth: "520px",
     marginBottom: "20px",
-    background: "#181825",
-    border: "1px solid #2e2e42",
+    background: "#252A4A",
+    border: "1px solid #0F3460",
     borderRadius: "16px",
     padding: "20px",
     boxSizing: "border-box",
@@ -489,7 +489,7 @@ const styles = {
   promptLabel: {
     fontSize: "15px",
     fontWeight: 600,
-    color: "#f0ede8",
+    color: "#F1F2F6",
     fontFamily: "'Syne', sans-serif",
   },
   promptCounter: {
@@ -500,11 +500,11 @@ const styles = {
   promptInput: {
     width: "100%",
     minHeight: "80px",
-    background: "#12121c",
-    borderStyle: "solid", borderWidth: "2px", borderColor: "#2e2e42",
+    background: "#16213E",
+    borderStyle: "solid", borderWidth: "2px", borderColor: "#0F3460",
     borderRadius: "12px",
     padding: "16px",
-    color: "#f0ede8",
+    color: "#F1F2F6",
     fontSize: "15px",
     fontFamily: "'DM Sans', sans-serif",
     resize: "vertical",
@@ -533,8 +533,8 @@ const styles = {
     marginBottom: "16px",
   },
   btn: {
-    background: "#7c6fff",
-    color: "#fff",
+    background: "#00D2D3",
+    color: "#16213E",
     border: "none",
     borderRadius: "12px",
     padding: "16px 40px",
@@ -552,8 +552,8 @@ const styles = {
   },
   btnSecondary: {
     background: "transparent",
-    color: "#7c6fff",
-    border: "2px solid #7c6fff",
+    color: "#00D2D3",
+    border: "2px solid #00D2D3",
     borderRadius: "12px",
     padding: "14px 40px",
     fontSize: "16px",
@@ -579,13 +579,14 @@ const styles = {
     width: "18px",
     height: "18px",
     border: "2px solid rgba(255,255,255,0.2)",
-    borderTopColor: "#fff",
+    borderTopColor: "#16213E",
     borderRadius: "50%",
     animation: "spin 0.8s linear infinite",
     flexShrink: 0,
   },
   hint: {
     fontSize: "13px",
-    color: "#3d3d5c",
+    color: "#0F3460",
   },
 };
+

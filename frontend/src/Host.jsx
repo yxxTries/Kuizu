@@ -107,10 +107,10 @@ export default function Host({ quiz, onEnd }) {
       {status === "connecting" && <p>Connecting to server...</p>}
 
       {status === "error" && (
-         <div style={{ color: "#ff4d4f" }}>
+         <div style={{ color: "#FF6B6B" }}>
             <h2>Connection Error</h2>
             <p>Could not connect to the multiplayer server. Ensure the backend is running on port 8000.</p>
-            <button onClick={onEnd} style={{ padding: "8px 16px", background: "transparent", border: "1px solid #4a4a5e", color: "#f0ede8", borderRadius: 8, margin: "10px auto" }}>Go Back</button>
+            <button onClick={onEnd} style={{ padding: "8px 16px", background: "transparent", border: "1px solid #4a4a5e", color: "#F1F2F6", borderRadius: 8, margin: "10px auto" }}>Go Back</button>
          </div>
       )}
 
@@ -118,20 +118,20 @@ export default function Host({ quiz, onEnd }) {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '40px', animation: 'fadeIn 0.5s ease', width: '100%', maxWidth: '800px', margin: '0 auto' }}>
             
             <div style={{ 
-              background: "#181825", 
-              border: "1px solid #2e2e42", 
+              background: "#252A4A", 
+              border: "1px solid #0F3460", 
               borderRadius: "24px", 
               padding: "40px", 
               width: "100%",
               boxShadow: "0 12px 48px rgba(0,0,0,0.3)"
             }}>
-              <h2 style={{ margin: "0 0 24px 0", fontSize: "28px", color: "#f0ede8", fontFamily: "'Syne', sans-serif" }}>
+              <h2 style={{ margin: "0 0 24px 0", fontSize: "28px", color: "#F1F2F6", fontFamily: "'Syne', sans-serif" }}>
                 Invite Players
               </h2>
               
               {showConnectionDetails ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', alignItems: 'center', animation: 'slideDown 0.3s ease' }}>
-                  <div style={{ background: "#fff", padding: "24px", borderRadius: "24px", display: "inline-block", boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}>
+                  <div style={{ background: "#16213E", padding: "24px", borderRadius: "24px", display: "inline-block", boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}>
                     <QRCodeSVG value={joinUrl} size={220} />
                   </div>
                   
@@ -139,7 +139,7 @@ export default function Host({ quiz, onEnd }) {
                     display: "flex", 
                     alignItems: "center", 
                     justifyContent: "space-between",
-                    background: "#2e2e42", 
+                    background: "#0F3460", 
                     borderRadius: "16px", 
                     padding: "16px 24px", 
                     width: "100%",
@@ -147,15 +147,15 @@ export default function Host({ quiz, onEnd }) {
                     boxSizing: "border-box"
                   }}>
                     <div style={{ textAlign: "left" }}>
-                      <span style={{ fontSize: "14px", color: "#8e8ea0", textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: "600" }}>Game PIN</span>
-                      <div style={{ fontSize: "36px", fontWeight: "bold", color: "#f0ede8", letterSpacing: "8px", marginTop: "4px" }}>{pin}</div>
+                      <span style={{ fontSize: "14px", color: "#B0BAC3", textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: "600" }}>Game PIN</span>
+                      <div style={{ fontSize: "36px", fontWeight: "bold", color: "#F1F2F6", letterSpacing: "8px", marginTop: "4px" }}>{pin}</div>
                     </div>
                     <button 
                       onClick={handleCopyUrl}
                       style={{
                         background: copied ? "rgba(124, 111, 255, 0.2)" : "transparent",
-                        border: "2px solid #7c6fff",
-                        color: "#7c6fff",
+                        border: "2px solid #00D2D3",
+                        color: "#00D2D3",
                         padding: "12px 24px",
                         borderRadius: "12px",
                         cursor: "pointer",
@@ -174,7 +174,7 @@ export default function Host({ quiz, onEnd }) {
                     onClick={() => setShowConnectionDetails(false)}
                     style={{
                       background: "transparent",
-                      color: "#8e8ea0",
+                      color: "#B0BAC3",
                       border: "none",
                       cursor: "pointer",
                       padding: "8px",
@@ -183,8 +183,8 @@ export default function Host({ quiz, onEnd }) {
                       textDecoration: "underline",
                       transition: "color 0.2s"
                     }}
-                    onMouseOver={(e) => e.currentTarget.style.color = "#f0ede8"}
-                    onMouseOut={(e) => e.currentTarget.style.color = "#8e8ea0"}
+                    onMouseOver={(e) => e.currentTarget.style.color = "#F1F2F6"}
+                    onMouseOut={(e) => e.currentTarget.style.color = "#B0BAC3"}
                   >
                     Hide Connection Details
                   </button>
@@ -193,8 +193,8 @@ export default function Host({ quiz, onEnd }) {
                 <button 
                   onClick={() => setShowConnectionDetails(true)}
                   style={{
-                    background: "#2e2e42",
-                    color: "#f0ede8",
+                    background: "#0F3460",
+                    color: "#F1F2F6",
                     border: "1px solid #4a4a5e",
                     padding: "20px 40px",
                     borderRadius: "16px",
@@ -207,7 +207,7 @@ export default function Host({ quiz, onEnd }) {
                     boxShadow: "0 4px 16px rgba(0,0,0,0.2)"
                   }}
                   onMouseOver={(e) => { e.currentTarget.style.background = "#3a3a52"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-                  onMouseOut={(e) => { e.currentTarget.style.background = "#2e2e42"; e.currentTarget.style.transform = "translateY(0)"; }}
+                  onMouseOut={(e) => { e.currentTarget.style.background = "#0F3460"; e.currentTarget.style.transform = "translateY(0)"; }}
                 >
                   Show Joining Details
                 </button>
@@ -219,7 +219,7 @@ export default function Host({ quiz, onEnd }) {
                 <h3 style={{ fontSize: "24px", margin: 0, fontFamily: "'Syne', sans-serif" }}>
                   Players ({players.length})
                 </h3>
-                <span style={{ color: "#8e8ea0", fontSize: "16px", fontWeight: "500" }}>
+                <span style={{ color: "#B0BAC3", fontSize: "16px", fontWeight: "500" }}>
                   {players.length === 0 ? "Waiting for players..." : "Ready to start"}
                 </span>
               </div>
@@ -230,7 +230,7 @@ export default function Host({ quiz, onEnd }) {
                 flexWrap: "wrap", 
                 minHeight: "120px", 
                 background: "rgba(24, 24, 37, 0.5)",
-                border: "2px dashed #2e2e42",
+                border: "2px dashed #0F3460",
                 borderRadius: "20px",
                 padding: "24px",
                 justifyContent: players.length === 0 ? "center" : "flex-start",
@@ -238,7 +238,7 @@ export default function Host({ quiz, onEnd }) {
                 alignContent: "flex-start"
               }}>
                 {players.length === 0 && (
-                  <div style={{ color: "#6b6b7e", fontStyle: "italic", fontSize: "18px", alignSelf: "center", width: "100%" }}>
+                  <div style={{ color: "#B0BAC3", fontStyle: "italic", fontSize: "18px", alignSelf: "center", width: "100%" }}>
                     No one has joined yet.
                   </div>
                 )}
@@ -247,8 +247,8 @@ export default function Host({ quiz, onEnd }) {
                     key={p} 
                     style={{ 
                       padding: "12px 24px", 
-                      background: i % 2 === 0 ? "#7c6fff" : "#6153cc", 
-                      color: "#fff",
+                      background: i % 2 === 0 ? "#00D2D3" : "#FF9F43", 
+                      color: "#16213E",
                       borderRadius: "16px", 
                       fontSize: "18px",
                       fontWeight: "600",
@@ -270,15 +270,15 @@ export default function Host({ quiz, onEnd }) {
                   padding: "18px 40px", 
                   background: "transparent", 
                   border: "2px solid #4a4a5e", 
-                  color: "#f0ede8", 
+                  color: "#F1F2F6", 
                   borderRadius: "16px",
                   fontSize: "20px",
                   fontWeight: "bold",
                   cursor: "pointer",
                   transition: "all 0.2s"
                 }}
-                onMouseOver={(e) => { e.currentTarget.style.background = "rgba(255, 77, 79, 0.1)"; e.currentTarget.style.color = "#ff4d4f"; e.currentTarget.style.borderColor = "#ff4d4f"; }}
-                onMouseOut={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#f0ede8"; e.currentTarget.style.borderColor = "#4a4a5e"; }}
+                onMouseOver={(e) => { e.currentTarget.style.background = "rgba(255, 77, 79, 0.1)"; e.currentTarget.style.color = "#FF6B6B"; e.currentTarget.style.borderColor = "#FF6B6B"; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#F1F2F6"; e.currentTarget.style.borderColor = "#4a4a5e"; }}
               >
                 Quit Lobby
               </button>
@@ -286,8 +286,8 @@ export default function Host({ quiz, onEnd }) {
                 onClick={handleStart} 
                 style={{ 
                   padding: "18px 60px", 
-                  background: "#7c6fff", 
-                  color: "#fff", 
+                  background: "#00D2D3", 
+                  color: "#16213E", 
                   border: "none", 
                   borderRadius: "16px", 
                   cursor: "pointer", 
@@ -340,19 +340,19 @@ export default function Host({ quiz, onEnd }) {
 
       {status === "results" && (
          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", animation: "slideUp 0.6s ease" }}>
-           <h2 style={{ fontSize: "48px", marginBottom: "40px", color: "#f0ede8", fontFamily: "'Syne', sans-serif" }}>Final Leaderboard</h2>
-           <div style={{ width: "100%", maxWidth: "600px", background: "#12121c", borderRadius: "16px", padding: "20px" }}>
+           <h2 style={{ fontSize: "48px", marginBottom: "40px", color: "#F1F2F6", fontFamily: "'Syne', sans-serif" }}>Final Leaderboard</h2>
+           <div style={{ width: "100%", maxWidth: "600px", background: "#16213E", borderRadius: "16px", padding: "20px" }}>
              {Object.entries(scores)
                .sort(([, a], [, b]) => b - a)
                .map(([name, score], i) => {
                  let crownColor = "";
-                 let textColor = "#8e8ea0";
+                 let textColor = "#B0BAC3";
                  if (i === 0) { crownColor = "#FFD700"; textColor = "#FFD700"; }
                  else if (i === 1) { crownColor = "#C0C0C0"; textColor = "#C0C0C0"; }
                  else if (i === 2) { crownColor = "#CD7F32"; textColor = "#CD7F32"; }
                  
                  return (
-                   <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px", borderBottom: i < Object.entries(scores).length - 1 ? "1px solid #2e2e42" : "none", background: i === 0 ? "rgba(124, 111, 255, 0.1)" : "transparent", borderRadius: "8px", marginBottom: "8px" }}>
+                   <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px", borderBottom: i < Object.entries(scores).length - 1 ? "1px solid #0F3460" : "none", background: i === 0 ? "rgba(124, 111, 255, 0.1)" : "transparent", borderRadius: "8px", marginBottom: "8px" }}>
                      <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
                        <div style={{ width: "40px", display: "flex", justifyContent: "center" }}>
                           {crownColor ? (
@@ -363,15 +363,15 @@ export default function Host({ quiz, onEnd }) {
                             <span style={{ fontSize: "24px", color: textColor }}>{i + 1}.</span>
                           )}
                        </div>
-                       <span style={{ fontSize: "24px", fontWeight: i < 3 ? "bold" : "normal", color: i === 0 ? "#7c6fff" : "#fff" }}>{name}</span>
+                       <span style={{ fontSize: "24px", fontWeight: i < 3 ? "bold" : "normal", color: i === 0 ? "#00D2D3" : "#16213E" }}>{name}</span>
                      </div>
                      <span style={{ fontSize: "28px", fontWeight: "bold", color: textColor }}>{score} pts</span>
                    </div>
                  );
                })}
-             {Object.keys(scores).length === 0 && <p style={{color: "#8e8ea0"}}>No final scores available.</p>}
+             {Object.keys(scores).length === 0 && <p style={{color: "#B0BAC3"}}>No final scores available.</p>}
            </div>
-           <button onClick={onEnd} style={{ marginTop: 40, padding: "16px 32px", fontSize: "20px", background: "transparent", color: "#6b6b7e", border: "1px solid #4a4a5e", borderRadius: 12, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+           <button onClick={onEnd} style={{ marginTop: 40, padding: "16px 32px", fontSize: "20px", background: "transparent", color: "#B0BAC3", border: "1px solid #4a4a5e", borderRadius: 12, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
              Exit Game
            </button>
            <style>{`
@@ -385,3 +385,4 @@ export default function Host({ quiz, onEnd }) {
     </div>
   );
 }
+
