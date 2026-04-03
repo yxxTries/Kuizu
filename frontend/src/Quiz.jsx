@@ -207,7 +207,7 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
                 End Game
               </span>
             ) : (
-              <span>🌟 {score}</span>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}><span style={{ fontWeight: 600 }}>Score: {score}/{total}</span><span onClick={onRestart} style={{ cursor: 'pointer', color: '#FF6B6B', fontWeight: 600 }}>End Game</span></div>
             )}
           </span>
         </div>

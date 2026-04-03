@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+﻿import React, { useState, useRef, useCallback } from "react";
 import { generateQuiz } from "./api.js";
 
 const ALLOWED = [".pdf", ".pptx"];
@@ -249,9 +249,13 @@ export default function Upload({ onQuizReady, onHostReady }) {
         <p style={styles.hint}>
           Runs locally / Groq API · No data stored · Free
         </p>
-      </main>
 
-      <style>{`
+          <a href="#" style={{ position: "absolute", bottom: "16px", right: "24px", fontSize: "12px", color: "#B0BAC3", opacity: 0.5, textDecoration: "none", cursor: "default" }}>
+            made by Amil
+          </a>
+        </main>
+
+        <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(24px); }
@@ -374,7 +378,7 @@ const styles = {
     background: "#1A1A2E",
   },
   dropzoneHasFile: {
-    borderColor: "#0F3460",
+    bordercolor: "#F1F2F6",
     borderStyle: "solid",
   },
   dropPrompt: {
@@ -386,7 +390,7 @@ const styles = {
   },
   dropIcon: {
     fontSize: "32px",
-    color: "#0F3460",
+    color: "#F1F2F6",
   },
   dropText: {
     fontSize: "16px",
@@ -395,7 +399,7 @@ const styles = {
   },
   dropMeta: {
     fontSize: "13px",
-    color: "#0F3460",
+    color: "#F1F2F6",
   },
   fileInfo: {
     display: "flex",
@@ -465,7 +469,7 @@ const styles = {
   sliderTicks: {
     position: "relative",
     fontSize: "12px",
-    color: "#0F3460",
+    color: "#F1F2F6",
     paddingTop: "2px",
   },
   promptWrap: {
@@ -501,7 +505,7 @@ const styles = {
     width: "100%",
     minHeight: "80px",
     background: "#16213E",
-    borderStyle: "solid", borderWidth: "2px", borderColor: "#0F3460",
+    borderStyle: "solid", borderWidth: "2px", bordercolor: "#F1F2F6",
     borderRadius: "12px",
     padding: "16px",
     color: "#F1F2F6",
@@ -552,8 +556,8 @@ const styles = {
   },
   btnSecondary: {
     background: "transparent",
-    color: "#00D2D3",
-    border: "2px solid #00D2D3",
+    color: "#FF9F43",
+      border: "2px solid #FF9F43",
     borderRadius: "12px",
     padding: "14px 40px",
     fontSize: "16px",
@@ -586,7 +590,11 @@ const styles = {
   },
   hint: {
     fontSize: "13px",
-    color: "#0F3460",
+    color: "#F1F2F6",
   },
 };
+
+
+
+
 
