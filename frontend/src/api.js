@@ -7,10 +7,15 @@ const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
  * @param {number} numQuestions - How many questions to generate (1–20).
  * @returns {Promise<{questions: Array}>} The quiz data.
  */
-export async function generateQuiz(file, numQuestions = 10) {
+export async function generateQuiz(file, numQuestions = 10, instructions = "") {
   const formData = new FormData();
-  formData.append("file", file);
+  if (file) {
+    formData.append("file", file);
+  }
   formData.append("num_questions", String(numQuestions));
+  if (instructions && instructions.trim() !== "") {
+    formData.append("custom_instructions", instructions.trim());
+  }
 
   const response = await fetch(`${BASE_URL}/generate-quiz`, {
     method: "POST",

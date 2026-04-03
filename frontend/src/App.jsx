@@ -8,8 +8,8 @@ import Join from "./Join.jsx";
 const globalStyle = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background: #0a0a0f;
-    color: #f0ede8;
+    background: #1A1A2E;
+    color: #F1F2F6;
     font-family: 'DM Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
   }
@@ -72,7 +72,7 @@ export default function App() {
          <div style={{ position: "relative" }}>
            <button 
               onClick={() => setPage("join")} 
-              style={{ position: "absolute", top: 24, right: 40, padding: "8px 16px", background: "transparent", color: "#8e8ea0", border: "1px solid #2e2e42", borderRadius: 8, cursor: "pointer" }}
+              style={{ position: "absolute", top: 24, right: 40, padding: "8px 16px", background: "transparent", color: "#B0BAC3", border: "1px solid #0F3460", borderRadius: 8, cursor: "pointer" }}
            >
               Join a Game
            </button>
@@ -86,3 +86,4 @@ export default function App() {
     </>
   );
 }
+

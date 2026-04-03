@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+﻿import React, { useState, useRef, useCallback } from "react";
 import { generateQuiz } from "./api.js";
 
 const ALLOWED = [".pdf", ".pptx"];
@@ -15,13 +15,19 @@ export default function Upload({ onQuizReady, onHostReady }) {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
   const [progress, setProgress]       = useState("");
-  const [numQuestions, setNumQuestions] = useState(10);
+  const [numQuestions, setNumQuestions] = useState(5);
+  const [prompt, setPrompt]           = useState("");
   const inputRef                      = useRef();
 
   const pickFile = (f) => {
     setError("");
     if (!fileIsValid(f)) {
       setError("Only .pdf and .pptx files are supported.");
+      return;
+    }
+    // 20 MB size limit check (20 * 1024 * 1024)
+    if (f.size > 20 * 1024 * 1024) {
+      setError("File exceeds the 20MB limit.");
       return;
     }
     setFile(f);
@@ -39,7 +45,7 @@ export default function Upload({ onQuizReady, onHostReady }) {
   const onDragLeave = ()  => setDragging(false);
 
   const handleSubmit = async (isHost = false) => {
-    if (!file) {
+    if (!file && !prompt.trim()) {
       const dummyQuestions = Array.from({ length: numQuestions }, (_, i) => ({
         question: `Question ${i + 1}`,
         choices: ["Option a", "Option b", "Option c", "Option d"],
@@ -70,7 +76,7 @@ export default function Upload({ onQuizReady, onHostReady }) {
     }, 3000);
 
     try {
-      const quiz = await generateQuiz(file, numQuestions);
+      const quiz = await generateQuiz(file, numQuestions, prompt);
       clearInterval(ticker);
       if (isHost) {
         onHostReady(quiz);
@@ -90,7 +96,7 @@ export default function Upload({ onQuizReady, onHostReady }) {
     <div style={styles.page}>
       {/* Header */}
       <header style={styles.header}>
-        <span style={styles.logo}>QuizAI</span>
+        <span style={styles.logo}>Kuizu</span>
         <span style={styles.tagline}>slides → quiz in seconds</span>
       </header>
 
@@ -100,7 +106,7 @@ export default function Upload({ onQuizReady, onHostReady }) {
           <span style={styles.accent}>Get a quiz.</span>
         </h1>
         <p style={styles.sub}>
-          Upload a PDF or PowerPoint to get a quiz made by QuizAI. You can edit it as you like before playing.
+          Upload a PDF or PowerPoint to get a quiz made by Kuizu. You can edit it as you like before playing.
         </p>
 
         {/* Drop zone */}
@@ -126,9 +132,9 @@ export default function Upload({ onQuizReady, onHostReady }) {
           {file ? (
             <div style={styles.fileInfo}>
               <span style={styles.fileIcon}>{file.name.endsWith(".pdf") ? "📄" : "📊"}</span>
-              <div>
+              <div style={{ flex: 1, textAlign: "left" }}>
                 <div style={styles.fileName}>{file.name}</div>
-                <div style={styles.fileSize}>{(file.size / 1024).toFixed(0)} KB</div>
+                <div style={styles.fileSize}>{(file.size / 1024 / 1024).toFixed(2)} MB</div>
               </div>
               {!loading && (
                 <button
@@ -146,6 +152,39 @@ export default function Upload({ onQuizReady, onHostReady }) {
               <div style={styles.dropMeta}>PDF · PPTX · max 20 MB</div>
             </div>
           )}
+        </div>
+
+        {/* Custom Prompt Section */}
+        <div style={styles.promptWrap}>
+          <div style={styles.promptHeader}>
+            <span style={styles.promptLabel}>Prompt / Context Text</span>
+            <span style={{
+              ...styles.promptCounter, 
+              color: prompt.length >= 4000 ? "#FF6B6B" : "#B0BAC3"
+            }}>
+              {prompt.length} / 4000
+            </span>
+          </div>
+          <textarea
+            style={{
+              ...styles.promptInput,
+              borderColor: prompt.length >= 4000 ? "#FF6B6B" : "#0F3460",
+            }}
+            value={prompt}
+            maxLength={4000}
+            onChange={(e) => setPrompt(e.target.value)}
+            disabled={loading}
+            onFocus={(e) => {
+              if (prompt.length < 4000) {
+                e.currentTarget.style.borderColor = "#00D2D3";
+                e.currentTarget.style.boxShadow = "0 0 0 4px rgba(124, 111, 255, 0.1)";
+              }
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = prompt.length >= 4000 ? "#FF6B6B" : "#0F3460";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          />
         </div>
 
         {/* Question count slider */}
@@ -192,7 +231,7 @@ export default function Upload({ onQuizReady, onHostReady }) {
                 <span style={styles.spinner} />
                 {progress}
               </span>
-            ) : file ? "Play Solo" : "Play Solo (create without file attachment)"}
+            ) : file || prompt.trim() ? "Generate & Play Solo" : "Play Sample Solo"}
           </button>
           
           <button
@@ -203,16 +242,20 @@ export default function Upload({ onQuizReady, onHostReady }) {
             onClick={() => handleSubmit(true)}
             disabled={loading}
           >
-            {loading ? "Generating Quiz..." : file ? "Host Multiplayer" : "Host Multiplayer"}
+            {loading ? "Generating Quiz..." : file || prompt.trim() ? "Generate & Host Multiplayer" : "Host Sample Multiplayer"}
           </button>
         </div>
 
         <p style={styles.hint}>
-          Runs locally · No data stored · Free
+          Runs locally / Groq API · No data stored · Free
         </p>
-      </main>
 
-      <style>{`
+          <a href="#" style={{ position: "absolute", bottom: "16px", right: "24px", fontSize: "12px", color: "#B0BAC3", opacity: 0.5, textDecoration: "none", cursor: "default" }}>
+            made by Amil
+          </a>
+        </main>
+
+        <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(24px); }
@@ -223,7 +266,7 @@ export default function Upload({ onQuizReady, onHostReady }) {
           appearance: none;
           width: 100%;
           height: 4px;
-          background: #2e2e42;
+          background: #0F3460;
           border-radius: 2px;
           outline: none;
           cursor: pointer;
@@ -234,18 +277,18 @@ export default function Upload({ onQuizReady, onHostReady }) {
           width: 16px;
           height: 16px;
           border-radius: 50%;
-          background: #7c6fff;
+          background: #00D2D3;
           cursor: pointer;
-          border: 2px solid #0a0a0f;
-          box-shadow: 0 0 0 2px #7c6fff44;
+          border: 2px solid #1A1A2E;
+          box-shadow: 0 0 0 2px #00D2D344;
         }
         input[type=range]::-moz-range-thumb {
           width: 16px;
           height: 16px;
           border-radius: 50%;
-          background: #7c6fff;
+          background: #00D2D3;
           cursor: pointer;
-          border: 2px solid #0a0a0f;
+          border: 2px solid #1A1A2E;
         }
         input[type=range]:disabled {
           opacity: 0.4;
@@ -259,8 +302,8 @@ export default function Upload({ onQuizReady, onHostReady }) {
 const styles = {
   page: {
     minHeight: "100vh",
-    background: "#0a0a0f",
-    color: "#f0ede8",
+    background: "#1A1A2E",
+    color: "#F1F2F6",
     fontFamily: "'DM Sans', sans-serif",
     display: "flex",
     flexDirection: "column",
@@ -276,12 +319,12 @@ const styles = {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 800,
     fontSize: "22px",
-    color: "#f0ede8",
+    color: "#F1F2F6",
     letterSpacing: "-0.5px",
   },
   tagline: {
     fontSize: "13px",
-    color: "#6b6b7e",
+    color: "#B0BAC3",
     fontWeight: 400,
   },
   main: {
@@ -300,15 +343,15 @@ const styles = {
     lineHeight: 1.1,
     textAlign: "center",
     marginBottom: "20px",
-    color: "#f0ede8",
+    color: "#F1F2F6",
     letterSpacing: "-1.5px",
   },
   accent: {
-    color: "#7c6fff",
+    color: "#00D2D3",
   },
   sub: {
     fontSize: "17px",
-    color: "#8e8ea0",
+    color: "#B0BAC3",
     textAlign: "center",
     maxWidth: "480px",
     lineHeight: 1.6,
@@ -318,9 +361,9 @@ const styles = {
     width: "100%",
     maxWidth: "520px",
     minHeight: "180px",
-    border: "2px dashed #2e2e42",
+    border: "2px dashed #0F3460",
     borderRadius: "16px",
-    background: "#12121c",
+    background: "#16213E",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -331,11 +374,11 @@ const styles = {
     boxSizing: "border-box",
   },
   dropzoneDragging: {
-    borderColor: "#7c6fff",
-    background: "#16162a",
+    borderColor: "#00D2D3",
+    background: "#1A1A2E",
   },
   dropzoneHasFile: {
-    borderColor: "#3d3d5c",
+    bordercolor: "#F1F2F6",
     borderStyle: "solid",
   },
   dropPrompt: {
@@ -347,16 +390,16 @@ const styles = {
   },
   dropIcon: {
     fontSize: "32px",
-    color: "#3d3d5c",
+    color: "#F1F2F6",
   },
   dropText: {
     fontSize: "16px",
-    color: "#6b6b7e",
+    color: "#B0BAC3",
     fontWeight: 500,
   },
   dropMeta: {
     fontSize: "13px",
-    color: "#3d3d5c",
+    color: "#F1F2F6",
   },
   fileInfo: {
     display: "flex",
@@ -371,19 +414,19 @@ const styles = {
   fileName: {
     fontSize: "15px",
     fontWeight: 500,
-    color: "#f0ede8",
+    color: "#F1F2F6",
     wordBreak: "break-all",
   },
   fileSize: {
     fontSize: "13px",
-    color: "#6b6b7e",
+    color: "#B0BAC3",
     marginTop: "2px",
   },
   clearBtn: {
     marginLeft: "auto",
     background: "none",
     border: "none",
-    color: "#6b6b7e",
+    color: "#B0BAC3",
     cursor: "pointer",
     fontSize: "18px",
     padding: "4px 8px",
@@ -394,7 +437,7 @@ const styles = {
     width: "100%",
     maxWidth: "520px",
     marginBottom: "20px",
-    background: "#12121c",
+    background: "#16213E",
     border: "1px solid #1e1e2e",
     borderRadius: "14px",
     padding: "18px 22px",
@@ -408,14 +451,14 @@ const styles = {
   },
   sliderLabel: {
     fontSize: "14px",
-    color: "#8e8ea0",
+    color: "#B0BAC3",
     fontWeight: 500,
   },
   sliderValue: {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 800,
     fontSize: "22px",
-    color: "#7c6fff",
+    color: "#00D2D3",
     lineHeight: 1,
   },
   slider: {
@@ -426,8 +469,52 @@ const styles = {
   sliderTicks: {
     position: "relative",
     fontSize: "12px",
-    color: "#3d3d5c",
+    color: "#F1F2F6",
     paddingTop: "2px",
+  },
+  promptWrap: {
+    width: "100%",
+    maxWidth: "520px",
+    marginBottom: "20px",
+    background: "#252A4A",
+    border: "1px solid #0F3460",
+    borderRadius: "16px",
+    padding: "20px",
+    boxSizing: "border-box",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+    animation: "fadeUp 0.6s ease both",
+  },
+  promptHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "12px",
+  },
+  promptLabel: {
+    fontSize: "15px",
+    fontWeight: 600,
+    color: "#F1F2F6",
+    fontFamily: "'Syne', sans-serif",
+  },
+  promptCounter: {
+    fontSize: "13px",
+    fontWeight: 500,
+    transition: "color 0.2s ease",
+  },
+  promptInput: {
+    width: "100%",
+    minHeight: "80px",
+    background: "#16213E",
+    borderStyle: "solid", borderWidth: "2px", bordercolor: "#F1F2F6",
+    borderRadius: "12px",
+    padding: "16px",
+    color: "#F1F2F6",
+    fontSize: "15px",
+    fontFamily: "'DM Sans', sans-serif",
+    resize: "vertical",
+    outline: "none",
+    boxSizing: "border-box",
+    transition: "border-color 0.2s ease, box-shadow 0.2s ease",
   },
   error: {
     background: "#1e0f0f",
@@ -450,8 +537,8 @@ const styles = {
     marginBottom: "16px",
   },
   btn: {
-    background: "#7c6fff",
-    color: "#fff",
+    background: "#00D2D3",
+    color: "#16213E",
     border: "none",
     borderRadius: "12px",
     padding: "16px 40px",
@@ -469,8 +556,8 @@ const styles = {
   },
   btnSecondary: {
     background: "transparent",
-    color: "#7c6fff",
-    border: "2px solid #7c6fff",
+    color: "#FF9F43",
+      border: "2px solid #FF9F43",
     borderRadius: "12px",
     padding: "14px 40px",
     fontSize: "16px",
@@ -496,13 +583,18 @@ const styles = {
     width: "18px",
     height: "18px",
     border: "2px solid rgba(255,255,255,0.2)",
-    borderTopColor: "#fff",
+    borderTopColor: "#16213E",
     borderRadius: "50%",
     animation: "spin 0.8s linear infinite",
     flexShrink: 0,
   },
   hint: {
     fontSize: "13px",
-    color: "#3d3d5c",
+    color: "#F1F2F6",
   },
 };
+
+
+
+
+

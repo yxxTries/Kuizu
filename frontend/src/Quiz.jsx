@@ -8,30 +8,56 @@ const CHOICE_COLORS = [
   { bg: "#26890c", hover: "#1b6408", label: "■" }, // green  — square
 ];
 
-function ProgressBar({ current, total }) {
-  const pct = ((current) / total) * 100;
-  return (
-    <div style={pbStyles.track}>
-      <div style={{ ...pbStyles.fill, width: `${pct}%` }} />
-    </div>
-  );
-}
-
 const pbStyles = {
+  container: {
+    padding: "0 32px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    width: "100%",
+    boxSizing: "border-box",
+  },
+  textRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    fontSize: "14px",
+    fontWeight: "bold",
+    color: "#B0BAC3",
+    textTransform: "uppercase",
+    letterSpacing: "1px",
+    fontFamily: "'Syne', sans-serif",
+  },
   track: {
     width: "100%",
-    height: "4px",
-    background: "#1e1e2e",
-    borderRadius: "2px",
+    height: "8px",
+    background: "#252A4A",
+    borderRadius: "4px",
     overflow: "hidden",
+    border: "1px solid #0F3460",
   },
   fill: {
     height: "100%",
-    background: "#7c6fff",
-    borderRadius: "2px",
-    transition: "width 0.4s ease",
+    background: "linear-gradient(90deg, #6153cc, #00D2D3)",
+    borderRadius: "4px",
+    transition: "width 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
   },
 };
+
+function ProgressBar({ current, total }) {
+  const pct = Math.max(0, Math.min(100, (current / total) * 100));
+  const remaining = total - current;
+  return (
+    <div style={pbStyles.container}>
+      <div style={pbStyles.textRow}>
+        <span style={{ color: "#00D2D3" }}>{current} Done</span>
+        <span>{remaining} Left</span>
+      </div>
+      <div style={pbStyles.track}>
+        <div style={{ ...pbStyles.fill, width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
 
 function ScoreScreen({ score, total, onRestart }) {
   const pct = Math.round((score / total) * 100);
@@ -69,7 +95,7 @@ const scoreStyles = {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 800,
     fontSize: "40px",
-    color: "#f0ede8",
+    color: "#F1F2F6",
     margin: 0,
     letterSpacing: "-1px",
   },
@@ -78,15 +104,15 @@ const scoreStyles = {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 800,
     fontSize: "72px",
-    color: "#7c6fff",
+    color: "#00D2D3",
     lineHeight: 1,
   },
   scoreOf: { fontSize: "28px", color: "#4a4a6a" },
-  pct: { fontSize: "18px", color: "#6b6b7e" },
+  pct: { fontSize: "18px", color: "#B0BAC3" },
   btn: {
     marginTop: "24px",
-    background: "#7c6fff",
-    color: "#fff",
+    background: "#00D2D3",
+    color: "#16213E",
     border: "none",
     borderRadius: "12px",
     padding: "16px 40px",
@@ -171,24 +197,22 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
 
   return (
     <div style={styles.page}>
-      {/* Top bar */}
+      {/* Top bar (minimalist loading screen) */}
       <header style={styles.header}>
-        <span style={styles.logo}>QuizAI</span>
-        <span style={styles.counter}>
-          Question <strong>{current + 1}</strong> / {total}
-        </span>
-        <span style={styles.scoreChip}>
-          {isHostMode ? (
-            <span onClick={onRestart} style={{ cursor: "pointer", color: "#ff4d4f", fontWeight: 600 }}>
-              Force Quit
-            </span>
-          ) : (
-            <span>⭐ {score}</span>
-          )}
-        </span>
+        <div style={styles.headerTop}>
+          <span style={styles.logo}>Kuizu</span>
+          <span style={styles.scoreChip}>
+            {isHostMode ? (
+              <span onClick={onRestart} style={{ cursor: "pointer", color: "#FF6B6B", fontWeight: 600 }}>
+                End Game
+              </span>
+            ) : (
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}><span style={{ fontWeight: 600 }}>Score: {score}/{total}</span><span onClick={onRestart} style={{ cursor: 'pointer', color: '#FF6B6B', fontWeight: 600 }}>End Game</span></div>
+            )}
+          </span>
+        </div>
+        <ProgressBar current={current + (revealed ? 1 : 0)} total={total} />
       </header>
-
-      <ProgressBar current={current + (revealed ? 1 : 0)} total={total} />
 
       <main style={styles.main}>
         {/* Question card */}
@@ -217,13 +241,13 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
               if (revealed) {
                 if (idx === q.correct_index) {
                   bg = color.bg;
-                  extra = { outline: "4px solid #fff", outlineOffset: "2px", transform: "scale(1.03)" };
+                  extra = { outline: "4px solid #16213E", outlineOffset: "2px", transform: "scale(1.03)" };
                 } else if (idx === selected || isHostMode) {
-                  bg = "#2a1a1a";
-                  extra = { opacity: 0.6 };
+                  bg = color.bg;
+                  extra = { opacity: 0.65, filter: "grayscale(40%)" };
                 } else {
-                  bg = "#141420";
-                  extra = { opacity: 0.35 };
+                  bg = color.bg;
+                  extra = { opacity: 0.5, filter: "grayscale(50%)" };
                 }
               }
 
@@ -235,22 +259,18 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
                   disabled={revealed || isHostMode}
                 >
                   {isHostMode && revealed && (
-                     <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: `${pct}%`, background: "rgba(255, 255, 255, 0.15)", zIndex: 1, transition: "width 0.6s ease-out" }} />
+                     <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: `${pct}%`, background: "rgba(255, 255, 255, 0.35)", zIndex: 1, transition: "width 0.6s ease-out" }} />
                   )}
-                  <span style={{ ...styles.choiceShape, position: "relative", zIndex: 2 }}>{color.label}</span>
+                  <span style={{ ...styles.choiceShape, position: "relative", zIndex: 2 }}>
+                    {revealed && idx === q.correct_index ? (
+                      <span style={styles.tick}>&#10003;</span>
+                    ) : revealed && !isHostMode && idx === selected && idx !== q.correct_index ? (
+                      <span style={styles.cross}>&#10007;</span>
+                    ) : (
+                      color.label
+                    )}
+                  </span>
                   <span style={{ ...styles.choiceText, position: "relative", zIndex: 2 }}>{choice}</span>
-                  {isHostMode && revealed && (
-                     <span style={{ position: "absolute", right: 20, zIndex: 2, fontWeight: "bold", fontSize: "18px", color: "rgba(255,255,255,0.8)" }}>{pct}%</span>
-                  )}
-                  {revealed && !isHostMode && idx === q.correct_index && (
-                    <span style={{ ...styles.tick, zIndex: 2 }}>&#10003;</span>
-                  )}
-                  {revealed && !isHostMode && idx === selected && idx !== q.correct_index && (
-                    <span style={{ ...styles.cross, zIndex: 2 }}>&#10007;</span>
-                  )}
-                  {isHostMode && revealed && idx === q.correct_index && (
-                    <span style={{ ...styles.tick, zIndex: 2, position: "absolute", right: 70 }}>&#10003;</span>
-                  )}
                 </button>
               );
             })}
@@ -281,7 +301,7 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
               ) : null}
 
               {isMultiplayer ? (
-                <p style={{ textAlign: "center", color: "#8e8ea0", margin: "10px 0" }}>
+                <p style={{ textAlign: "center", color: "#B0BAC3", margin: "10px 0" }}>
                   Waiting for the host to start the next question...
                 </p>
               ) : (
@@ -296,7 +316,7 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
           {isHostMode && !revealed && (
             <div style={{ textAlign: "center", marginTop: 30 }}>
               <button
-                style={{ padding: "16px 32px", fontSize: "20px", background: "#7c6fff", color: "#fff", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}
+                style={{ padding: "16px 32px", fontSize: "20px", background: "#00D2D3", color: "#16213E", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}
                 onClick={handleHostNext}
               >
                 {current + 1 === total ? "Reveal & End Game" : "Reveal & Next Question \u2192"}
@@ -318,36 +338,40 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
 const styles = {
   page: {
     minHeight: "100vh",
-    background: "#0a0a0f",
-    color: "#f0ede8",
+    background: "#1A1A2E",
+    color: "#F1F2F6",
     fontFamily: "'DM Sans', sans-serif",
     display: "flex",
     flexDirection: "column",
   },
   header: {
     display: "flex",
+    flexDirection: "column",
+    padding: "24px 0",
+    gap: "24px",
+    background: "#16213E",
+    borderBottom: "1px solid #1e1e2e",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+  },
+  headerTop: {
+    display: "flex",
+    justifyContent: "space-between",
     alignItems: "center",
-    padding: "18px 32px",
-    gap: "16px",
+    padding: "0 32px",
   },
   logo: {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 800,
-    fontSize: "20px",
-    color: "#f0ede8",
+    fontSize: "24px",
+    color: "#F1F2F6",
     letterSpacing: "-0.5px",
-    marginRight: "auto",
-  },
-  counter: {
-    fontSize: "14px",
-    color: "#8e8ea0",
   },
   scoreChip: {
     background: "#1a1a2e",
     borderRadius: "20px",
     padding: "6px 14px",
     fontSize: "14px",
-    color: "#f0ede8",
+    color: "#F1F2F6",
     fontWeight: 500,
   },
   main: {
@@ -362,29 +386,37 @@ const styles = {
     boxSizing: "border-box",
   },
   questionCard: {
-    background: "#12121c",
-    border: "1px solid #1e1e2e",
-    borderRadius: "16px",
-    padding: "28px 32px",
+    background: "#252A4A",
+    border: "1px solid #0F3460",
+    borderRadius: "24px",
+    padding: "48px 40px",
     width: "100%",
-    marginBottom: "28px",
+    marginBottom: "40px",
     animation: "slideUp 0.35s ease both",
     boxSizing: "border-box",
+    textAlign: "center",
+    boxShadow: "0 12px 48px rgba(0,0,0,0.3)",
   },
   qNumber: {
+    display: "inline-block",
+    background: "rgba(124, 111, 255, 0.15)",
+    padding: "6px 16px",
+    borderRadius: "20px",
     fontFamily: "'Syne', sans-serif",
     fontWeight: 700,
-    fontSize: "13px",
-    color: "#7c6fff",
-    marginBottom: "10px",
-    letterSpacing: "0.5px",
+    fontSize: "16px",
+    color: "#00D2D3",
+    marginBottom: "24px",
+    letterSpacing: "1px",
+    textTransform: "uppercase",
   },
   questionText: {
-    fontSize: "22px",
-    fontWeight: 500,
-    lineHeight: 1.4,
+    fontSize: "36px",
+    fontWeight: 700,
+    lineHeight: 1.3,
     margin: 0,
-    color: "#f0ede8",
+    color: "#F1F2F6",
+    fontFamily: "'Syne', sans-serif",
   },
   grid: {
     display: "grid",
@@ -405,7 +437,7 @@ const styles = {
     fontSize: "15px",
     fontFamily: "'DM Sans', sans-serif",
     fontWeight: 500,
-    color: "#fff",
+    color: "#16213E",
     transition: "opacity 0.2s, transform 0.15s, outline 0.1s",
     minHeight: "72px",
   },
@@ -456,8 +488,8 @@ const styles = {
     textAlign: "center",
   },
   nextBtn: {
-    background: "#7c6fff",
-    color: "#fff",
+    background: "#00D2D3",
+    color: "#16213E",
     border: "none",
     borderRadius: "12px",
     padding: "16px",
@@ -469,9 +501,10 @@ const styles = {
   },
   miniLeaderboard: {
     background: "#1a1a2e",
-    border: "1px solid #2e2e42",
+    border: "1px solid #0F3460",
     borderRadius: "10px",
     padding: "12px 16px",
-    color: "#f0ede8",
+    color: "#F1F2F6",
   },
 };
+

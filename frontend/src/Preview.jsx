@@ -221,7 +221,7 @@ function QuestionCard({
 const cardStyles = {
   card: {
     position: "relative",
-    background: "#12121c",
+    background: "#16213E",
     border: "1px solid #1e1e2e",
     borderRadius: "16px",
     padding: "22px 24px",
@@ -230,9 +230,9 @@ const cardStyles = {
     userSelect: "none",
   },
   cardEditing: {
-    borderLeft: "3px solid #7c6fff",
-    borderColor: "#7c6fff",
-    boxShadow: "0 0 0 1px #7c6fff33",
+    borderLeft: "3px solid #00D2D3",
+    borderColor: "#00D2D3",
+    boxShadow: "0 0 0 1px #00D2D333",
     cursor: "default",
   },
   cardError: {
@@ -240,8 +240,8 @@ const cardStyles = {
     boxShadow: "0 0 0 1px #c0392b44",
   },
   cardDragOver: {
-    borderColor: "#7c6fff",
-    background: "#16162a",
+    borderColor: "#00D2D3",
+    background: "#1A1A2E",
   },
   dropLine: {
     position: "absolute",
@@ -249,7 +249,7 @@ const cardStyles = {
     left: "0",
     right: "0",
     height: "3px",
-    background: "#7c6fff",
+    background: "#00D2D3",
     borderRadius: "2px",
   },
   headerRow: {
@@ -262,7 +262,7 @@ const cardStyles = {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 700,
     fontSize: "12px",
-    color: "#7c6fff",
+    color: "#00D2D3",
     letterSpacing: "0.5px",
   },
   actions: {
@@ -276,17 +276,18 @@ const cardStyles = {
     fontSize: "16px",
     padding: "4px 6px",
     borderRadius: "6px",
-    opacity: 0.6,
+    opacity: 0.9,
     transition: "opacity 0.15s, background 0.15s",
   },
   deleteBtn: {
-    opacity: 0.4,
+    opacity: 1,
+    color: "#FF6B6B",
   },
   questionText: {
     fontSize: "17px",
     fontWeight: 500,
     lineHeight: 1.45,
-    color: "#f0ede8",
+    color: "#F1F2F6",
     marginBottom: "14px",
     userSelect: "text",
   },
@@ -339,7 +340,7 @@ const cardStyles = {
   fieldLabel: {
     fontSize: "12px",
     fontWeight: 600,
-    color: "#6b6b7e",
+    color: "#B0BAC3",
     letterSpacing: "0.4px",
     textTransform: "uppercase",
     marginBottom: "8px",
@@ -352,10 +353,10 @@ const cardStyles = {
   },
   textarea: {
     width: "100%",
-    background: "#0a0a0f",
-    border: "1px solid #2e2e42",
+    background: "#1A1A2E",
+    border: "1px solid #0F3460",
     borderRadius: "10px",
-    color: "#f0ede8",
+    color: "#F1F2F6",
     fontSize: "16px",
     lineHeight: 1.5,
     padding: "12px 14px",
@@ -370,7 +371,7 @@ const cardStyles = {
     marginBottom: "8px",
   },
   radio: {
-    accentColor: "#7c6fff",
+    accentColor: "#00D2D3",
     width: "16px",
     height: "16px",
     flexShrink: 0,
@@ -378,10 +379,10 @@ const cardStyles = {
   },
   choiceInput: {
     flex: 1,
-    background: "#0a0a0f",
-    border: "1px solid #2e2e42",
+    background: "#1A1A2E",
+    border: "1px solid #0F3460",
     borderRadius: "8px",
-    color: "#f0ede8",
+    color: "#F1F2F6",
     fontSize: "14px",
     padding: "9px 12px",
     outline: "none",
@@ -417,15 +418,15 @@ const cardStyles = {
   cancelLink: {
     background: "none",
     border: "none",
-    color: "#6b6b7e",
+    color: "#B0BAC3",
     fontSize: "14px",
     cursor: "pointer",
     padding: "8px 4px",
     textDecoration: "underline",
   },
   saveBtn: {
-    background: "#7c6fff",
-    color: "#fff",
+    background: "#00D2D3",
+    color: "#16213E",
     border: "none",
     borderRadius: "10px",
     padding: "10px 28px",
@@ -615,7 +616,7 @@ export default function Preview({ quiz, onStart, onBack, intent = "solo" }) {
     <div style={styles.page}>
       {/* Header */}
       <header style={styles.header}>
-        <span style={styles.logo}>QuizAI</span>
+        <span style={styles.logo}>Kuizu</span>
         <span style={styles.title}>Review Questions</span>
         <button style={styles.startBtn} onClick={handleStart}>
           {intent === "host" ? "Create Lobby \u2192" : "Start Quiz \u2192"}
@@ -699,8 +700,8 @@ export default function Preview({ quiz, onStart, onBack, intent = "solo" }) {
           to   { opacity: 1; transform: translateY(0); }
         }
         textarea:focus, input[type="text"]:focus {
-          border-color: #7c6fff !important;
-          box-shadow: 0 0 0 2px #7c6fff22;
+          border-color: #00D2D3 !important;
+          box-shadow: 0 0 0 2px #00D2D322;
         }
         button[data-iconbtn]:hover { opacity: 1 !important; background: #1e1e2e; }
       `}</style>
@@ -711,8 +712,8 @@ export default function Preview({ quiz, onStart, onBack, intent = "solo" }) {
 const styles = {
   page: {
     minHeight: "100vh",
-    background: "#0a0a0f",
-    color: "#f0ede8",
+    background: "#1A1A2E",
+    color: "#F1F2F6",
     fontFamily: "'DM Sans', sans-serif",
     display: "flex",
     flexDirection: "column",
@@ -725,14 +726,14 @@ const styles = {
     gap: "16px",
     position: "sticky",
     top: 0,
-    background: "#0a0a0f",
+    background: "#1A1A2E",
     zIndex: 10,
   },
   logo: {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 800,
     fontSize: "20px",
-    color: "#f0ede8",
+    color: "#F1F2F6",
     letterSpacing: "-0.5px",
   },
   title: {
@@ -741,12 +742,12 @@ const styles = {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 700,
     fontSize: "18px",
-    color: "#f0ede8",
+    color: "#F1F2F6",
     letterSpacing: "-0.3px",
   },
   startBtn: {
-    background: "#7c6fff",
-    color: "#fff",
+    background: "#00D2D3",
+    color: "#16213E",
     border: "none",
     borderRadius: "10px",
     padding: "10px 22px",
@@ -781,7 +782,7 @@ const styles = {
   },
   countLabel: {
     fontSize: "13px",
-    color: "#6b6b7e",
+    color: "#B0BAC3",
     fontWeight: 500,
   },
   toggleLabel: {
@@ -793,7 +794,7 @@ const styles = {
   },
   toggleText: {
     fontSize: "13px",
-    color: "#8e8ea0",
+    color: "#B0BAC3",
   },
   toggle: {
     width: "42px",
@@ -805,14 +806,14 @@ const styles = {
     display: "flex",
     alignItems: "center",
   },
-  toggleOn:  { background: "#7c6fff" },
-  toggleOff: { background: "#2e2e42" },
+  toggleOn:  { background: "#00D2D3" },
+  toggleOff: { background: "#0F3460" },
   toggleKnob: {
     position: "absolute",
     width: "18px",
     height: "18px",
     borderRadius: "50%",
-    background: "#fff",
+    background: "#16213E",
     transition: "transform 0.2s",
     boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
   },
@@ -823,9 +824,9 @@ const styles = {
   addBtn: {
     width: "100%",
     background: "transparent",
-    border: "2px dashed #2e2e42",
+    border: "2px dashed #0F3460",
     borderRadius: "14px",
-    color: "#6b6b7e",
+    color: "#B0BAC3",
     fontSize: "14px",
     fontWeight: 500,
     padding: "16px",
@@ -847,3 +848,4 @@ const styles = {
     padding: "4px",
   },
 };
+

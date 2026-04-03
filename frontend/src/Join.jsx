@@ -92,51 +92,220 @@ export default function Join({ onExit, initialPin = "" }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ background: "#12121c", padding: 40, borderRadius: 16, width: "100%", maxWidth: 400, textAlign: "center" }}>
-        <h1 style={{ marginBottom: 30 }}>Join Game</h1>
+    <div style={{ 
+      minHeight: "100vh", 
+      display: "flex", 
+      alignItems: "center", 
+      justifyContent: "center", 
+      padding: "20px",
+      background: "transparent"
+    }}>
+      <div style={{ 
+        background: "#252A4A", 
+        padding: "48px", 
+        borderRadius: "24px", 
+        width: "100%", 
+        maxWidth: "440px", 
+        textAlign: "center",
+        boxShadow: "0 12px 48px rgba(0,0,0,0.3)",
+        border: "1px solid #0F3460",
+        animation: "fadeInUp 0.6s ease"
+      }}>
         
         {status === "waiting" ? (
-          <div>
-            <h2 style={{ color: "#7c6fff", fontSize: 28, marginBottom: 16 }}>You're in!</h2>
-            <p style={{ fontSize: 18, color: "#f0ede8" }}>Waiting for {name === "host" ? "something" : "the host"} to start...</p>
-            <div style={{ marginTop: 30 }}>
-               <div style={{ display: "inline-block", width: 40, height: 40, borderRadius: "50%", border: "3px solid rgba(124, 111, 255, 0.2)", borderTopColor: "#7c6fff", animation: "spin 1s linear infinite" }} />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", animation: "fadeIn 0.5s ease" }}>
+            <div style={{ 
+              background: "rgba(124, 111, 255, 0.1)", 
+              color: "#00D2D3", 
+              padding: "16px 32px", 
+              borderRadius: "20px", 
+              marginBottom: "32px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "12px",
+              border: "1px solid rgba(124, 111, 255, 0.2)"
+            }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <h2 style={{ fontSize: "24px", margin: 0, fontFamily: "'Syne', sans-serif" }}>You're in!</h2>
             </div>
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            
+            <p style={{ fontSize: "20px", color: "#F1F2F6", margin: "0 0 40px 0", fontWeight: "500" }}>
+              Waiting for the host to start...
+            </p>
+            
+            <div style={{ position: "relative", width: "80px", height: "80px" }}>
+               <div style={{ 
+                 position: "absolute",
+                 top: 0, left: 0, right: 0, bottom: 0,
+                 borderRadius: "50%", 
+                 border: "4px solid rgba(124, 111, 255, 0.1)"
+               }} />
+               <div style={{ 
+                 position: "absolute",
+                 top: 0, left: 0, right: 0, bottom: 0,
+                 borderRadius: "50%", 
+                 border: "4px solid transparent",
+                 borderTopColor: "#00D2D3", 
+                 animation: "spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite" 
+               }} />
+            </div>
+            
+            <button
+               type="button"
+               onClick={() => { if(ws.current) ws.current.close(); onExit(); }}
+               style={{ 
+                 marginTop: "48px", 
+                 padding: "12px 24px", 
+                 background: "transparent", 
+                 color: "#B0BAC3", 
+                 border: "none", 
+                 cursor: "pointer", 
+                 fontSize: "16px", 
+                 textDecoration: "underline",
+                 transition: "color 0.2s"
+               }}
+               onMouseOver={(e) => e.currentTarget.style.color = "#F1F2F6"}
+               onMouseOut={(e) => e.currentTarget.style.color = "#B0BAC3"}
+            >
+               Leave Game
+            </button>
+            
+            <style>{`
+              @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+              @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            `}</style>
           </div>
         ) : (
-          <form onSubmit={handleJoin}>
-            <input 
-              placeholder="Game PIN" 
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              style={{ width: "100%", padding: 16, marginBottom: 16, borderRadius: 8, border: "1px solid #2e2e42", background: "#0a0a0f", color: "#fff", fontSize: 20, textAlign: "center" }} 
-            />
-            <input 
-              placeholder="Nickname" 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              style={{ width: "100%", padding: 16, marginBottom: 16, borderRadius: 8, border: "1px solid #2e2e42", background: "#0a0a0f", color: "#fff", fontSize: 20, textAlign: "center" }}
-            />
-            {error && <p style={{ color: "#ff4d4f", marginBottom: 16 }}>{error}</p>}
+          <form onSubmit={handleJoin} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <h1 style={{ margin: "0 0 10px 0", fontSize: "36px", fontFamily: "'Syne', sans-serif", color: "#F1F2F6" }}>Join Game</h1>
+            
+            <div style={{ position: "relative" }}>
+              <input 
+                placeholder="Game PIN" 
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                required
+                style={{ 
+                  width: "100%", 
+                  padding: "20px 24px", 
+                  borderRadius: "16px", 
+                  border: "2px solid #0F3460", 
+                  background: "#16213E", 
+                  color: "#F1F2F6", 
+                  fontSize: "20px", 
+                  textAlign: "center",
+                  outline: "none",
+                  transition: "all 0.2s",
+                  boxSizing: "border-box",
+                  letterSpacing: pin ? "4px" : "normal",
+                  fontWeight: pin ? "bold" : "normal"
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#00D2D3"; e.currentTarget.style.boxShadow = "0 0 0 4px rgba(124, 111, 255, 0.1)"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "#0F3460"; e.currentTarget.style.boxShadow = "none"; }}
+              />
+            </div>
+            
+            <div style={{ position: "relative" }}>
+              <input 
+                placeholder="Nickname" 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                style={{ 
+                  width: "100%", 
+                  padding: "20px 24px", 
+                  borderRadius: "16px", 
+                  border: "2px solid #0F3460", 
+                  background: "#16213E", 
+                  color: "#F1F2F6", 
+                  fontSize: "20px", 
+                  textAlign: "center",
+                  outline: "none",
+                  transition: "all 0.2s",
+                  boxSizing: "border-box",
+                  fontWeight: name ? "bold" : "normal"
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#00D2D3"; e.currentTarget.style.boxShadow = "0 0 0 4px rgba(124, 111, 255, 0.1)"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "#0F3460"; e.currentTarget.style.boxShadow = "none"; }}
+              />
+            </div>
+            
+            {error && (
+              <div style={{ 
+                background: "rgba(255, 77, 79, 0.1)", 
+                border: "1px solid rgba(255, 77, 79, 0.3)", 
+                color: "#FF6B6B", 
+                padding: "12px", 
+                borderRadius: "12px",
+                fontSize: "16px",
+                animation: "shake 0.4s ease"
+              }}>
+                {error}
+              </div>
+            )}
+            
             <button 
               type="submit"
-              disabled={status === "joining"}
-              style={{ width: "100%", padding: 16, background: "#7c6fff", color: "#fff", border: "none", borderRadius: 8, cursor: status === "joining" ? "wait" : "pointer", fontSize: 20 }}
+              disabled={status === "joining" || !pin || !name}
+              style={{ 
+                width: "100%", 
+                padding: "20px", 
+                background: (!pin || !name) ? "#0F3460" : "#00D2D3", 
+                color: (!pin || !name) ? "#B0BAC3" : "#16213E", 
+                border: "none", 
+                borderRadius: "16px", 
+                cursor: (status === "joining" || !pin || !name) ? "not-allowed" : "pointer", 
+                fontSize: "20px",
+                fontWeight: "bold",
+                marginTop: "10px",
+                transition: "all 0.2s",
+                boxShadow: (!pin || !name) ? "none" : "0 8px 24px rgba(124, 111, 255, 0.3)",
+                opacity: status === "joining" ? 0.7 : 1
+              }}
+              onMouseOver={(e) => { if(pin && name && status !== "joining") e.currentTarget.style.transform = "translateY(-2px)"; }}
+              onMouseOut={(e) => { if(pin && name && status !== "joining") e.currentTarget.style.transform = "translateY(0)"; }}
             >
-              {status === "joining" ? "Connecting..." : "Enter"}
+              {status === "joining" ? "Connecting..." : "Join Game"}
             </button>
+            
             <button
                type="button"
                onClick={onExit}
-               style={{ width: "100%", padding: 16, background: "transparent", color: "#6b6b7e", border: "none", cursor: "pointer", fontSize: 16, marginTop: 10 }}
+               style={{ 
+                 width: "100%", 
+                 padding: "16px", 
+                 background: "transparent", 
+                 color: "#B0BAC3", 
+                 border: "2px solid transparent", 
+                 borderRadius: "16px",
+                 cursor: "pointer", 
+                 fontSize: "18px", 
+                 fontWeight: "600",
+                 transition: "all 0.2s",
+               }}
+               onMouseOver={(e) => { e.currentTarget.style.background = "rgba(46, 46, 66, 0.5)"; e.currentTarget.style.color = "#F1F2F6"; }}
+               onMouseOut={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#B0BAC3"; }}
             >
-               Back
+               Back to Home
             </button>
+            <style>{`
+              @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                50% { transform: translateX(5px); }
+                75% { transform: translateX(-5px); }
+              }
+              @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+            `}</style>
           </form>
         )}
       </div>
     </div>
   );
 }
+
