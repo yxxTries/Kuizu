@@ -9,6 +9,7 @@ export default function Join({ onExit, initialPin = "" }) {
   const [error, setError] = useState("");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [leaderboard, setLeaderboard] = useState({});
+  const [hostRevealed, setHostRevealed] = useState(false);
   const ws = useRef(null);
 
   const handleJoin = (e) => {
@@ -48,6 +49,9 @@ export default function Join({ onExit, initialPin = "" }) {
         setStatus("playing");
       } else if (data.type === "next_question") {
         setCurrentQuestionIndex(data.index);
+        setHostRevealed(false);
+      } else if (data.type === "reveal_answer") {
+        setHostRevealed(true);
       } else if (data.type === "leaderboard") {
         setLeaderboard(data.scores);
       } else if (data.type === "end_game") {
@@ -63,9 +67,9 @@ export default function Join({ onExit, initialPin = "" }) {
     };
   };
 
-  const handleScoreUpdate = (score) => {
+  const handleScoreUpdate = (score, streak = 0) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify({ type: "score_update", score }));
+      ws.current.send(JSON.stringify({ type: "score_update", score, streak }));
     }
   };
 
@@ -82,10 +86,19 @@ export default function Join({ onExit, initialPin = "" }) {
         <Quiz
           quiz={quiz}
           onRestart={() => { if(ws.current) ws.current.close(); onExit(); }}
+          onJoinNew={() => {
+            if(ws.current) ws.current.close();
+            setStatus("login");
+            setPin("");
+            setQuiz(null);
+            setCurrentQuestionIndex(0);
+            setLeaderboard({});
+          }}
           onScoreUpdate={handleScoreUpdate}
           onAnswerSubmit={handleAnswerSubmit}
           currentQuestionIndex={currentQuestionIndex}
           leaderboard={leaderboard}
+          hostRevealed={hostRevealed}
         />
       </div>
     );

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 
 // Classic Kahoot-inspired answer colors
 const CHOICE_COLORS = [
@@ -10,7 +11,6 @@ const CHOICE_COLORS = [
 
 const pbStyles = {
   container: {
-    padding: "0 32px",
     display: "flex",
     flexDirection: "column",
     gap: "8px",
@@ -45,13 +45,8 @@ const pbStyles = {
 
 function ProgressBar({ current, total }) {
   const pct = Math.max(0, Math.min(100, (current / total) * 100));
-  const remaining = total - current;
   return (
     <div style={pbStyles.container}>
-      <div style={pbStyles.textRow}>
-        <span style={{ color: "#00D2D3" }}>{current} Done</span>
-        <span>{remaining} Left</span>
-      </div>
       <div style={pbStyles.track}>
         <div style={{ ...pbStyles.fill, width: `${pct}%` }} />
       </div>
@@ -59,12 +54,12 @@ function ProgressBar({ current, total }) {
   );
 }
 
-function ScoreScreen({ score, total, onRestart }) {
+function ScoreScreen({ score, total, onRestart, onJoinNew, leaderboard, isMultiplayer }) {
   const pct = Math.round((score / total) * 100);
   const emoji = pct === 100 ? "🏆" : pct >= 70 ? "🎉" : pct >= 40 ? "🙂" : "😅";
 
   return (
-    <div style={scoreStyles.wrap}>
+    <div style={{ ...scoreStyles.wrap, padding: "40px", boxSizing: "border-box" }}>
       <div style={scoreStyles.emoji}>{emoji}</div>
       <h1 style={scoreStyles.h1}>Quiz complete!</h1>
       <div style={scoreStyles.scoreBox}>
@@ -72,9 +67,36 @@ function ScoreScreen({ score, total, onRestart }) {
         <span style={scoreStyles.scoreOf}>/ {total}</span>
       </div>
       <div style={scoreStyles.pct}>{pct}% correct</div>
-      <button style={scoreStyles.btn} onClick={onRestart}>
-        Try another document →
-      </button>
+
+      {isMultiplayer && leaderboard && Object.keys(leaderboard).length > 0 && (
+        <div style={{ marginTop: "32px", width: "100%", maxWidth: "500px", background: "#252A4A", borderRadius: "16px", padding: "24px", border: "1px solid #0F3460", display: "flex", flexDirection: "column", gap: "8px", maxHeight: "40vh", overflowY: "auto" }}>
+           <h2 style={{ color: "#F1F2F6", margin: "0 0 16px 0", fontSize: "24px", fontFamily: "'Syne', sans-serif", borderBottom: "1px solid #16213E", paddingBottom: "12px" }}>Final Leaderboard</h2>
+           {Object.entries(leaderboard)
+             .sort(([, a], [, b]) => b - a)
+             .map(([name, pts], i) => (
+                <div key={name} style={{ display: "flex", justifyContent: "space-between", padding: "12px", borderBottom: i < Object.entries(leaderboard).length - 1 ? "1px solid #16213E" : "none", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{ color: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#B0BAC3", fontWeight: i < 3 ? "bold" : "normal", fontSize: "20px", width: "30px" }}>
+                      {i + 1}.
+                    </span>
+                    <span style={{ color: i === 0 ? "#00D2D3" : "#F1F2F6", fontWeight: i < 3 ? "bold" : "normal", fontSize: "20px" }}>{name}</span>
+                  </div>
+                  <span style={{ color: "#B0BAC3", fontWeight: "bold", fontSize: "20px" }}>{pts} pts</span>
+                </div>
+             ))}
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "24px", width: "100%", maxWidth: "320px" }}>
+        {isMultiplayer && onJoinNew && (
+          <button style={{...scoreStyles.btn, marginTop: 0, width: "100%", background: "#00D2D3", color: "#16213E", border: "none", boxSizing: "border-box"}} onClick={onJoinNew}>
+            Join New Game →
+          </button>
+        )}
+        <button style={{...scoreStyles.btn, marginTop: 0, width: "100%", boxSizing: "border-box", ...(isMultiplayer && onJoinNew ? { background: "#FF6B6B", color: "#F1F2F6", border: "none" } : {})}} onClick={onRestart}>
+          {isMultiplayer ? "Exit Game" : "Try another document →"}
+        </button>
+      </div>
       <style>{`@keyframes popIn { from{opacity:0;transform:scale(0.8)} to{opacity:1;transform:scale(1)} }`}</style>
     </div>
   );
@@ -123,11 +145,13 @@ const scoreStyles = {
   },
 };
 
-export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, currentQuestionIndex = null, leaderboard = null, isHostMode = false, hostAnswers = {}, triggerNextQuestion = null }) {
+export default function Quiz({ quiz, onRestart, onJoinNew, onScoreUpdate, onAnswerSubmit, currentQuestionIndex = null, leaderboard = null, streaks = null, isHostMode = false, hostAnswers = {}, triggerNextQuestion = null, hostRevealed = false, onReveal = null }) {
   const { questions } = quiz;
   const total = questions.length;
 
   const isMultiplayer = currentQuestionIndex !== null;
+
+  const [leaderboardRef] = useAutoAnimate();
 
   const [localCurrent, setLocalCurrent] = useState(0);
   const current = isMultiplayer ? currentQuestionIndex : localCurrent;
@@ -135,7 +159,19 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
   const [selected,  setSelected]  = useState(null);   // index of chosen answer 
   const [revealed,  setRevealed]  = useState(false);  // show correct/wrong     
   const [score,     setScore]     = useState(0);
+  const [streak,    setStreak]    = useState(0);
   const [done,      setDone]      = useState(false);
+  const [showConfirmEnd, setShowConfirmEnd] = useState(false);
+
+  const [lockedLeaderboard, setLockedLeaderboard] = useState(leaderboard || {});
+  const [lockedStreaks, setLockedStreaks] = useState(streaks || {});
+
+  React.useEffect(() => {
+    if (revealed || done) {
+      setLockedLeaderboard(leaderboard || {});
+      setLockedStreaks(streaks || {});
+    }
+  }, [leaderboard, streaks, revealed, done]);
 
   // When host moves to the next question, reset selection state
   React.useEffect(() => {
@@ -151,17 +187,25 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
 
   const q = questions[current < total ? current : total - 1] || questions[0];
 
+  const showResults = isMultiplayer && !isHostMode ? hostRevealed : revealed;
+
   const handleSelect = (idx) => {
     if (revealed || isHostMode) return;
     setSelected(idx);
     setRevealed(true);
     let newScore = score;
+    let newStreak = streak;
     if (idx === q.correct_index) {
        newScore += 1;
+       newStreak += 1;
        setScore(newScore);
+       setStreak(newStreak);
+    } else {
+       newStreak = 0;
+       setStreak(newStreak);
     }
     if (onScoreUpdate) {
-       onScoreUpdate(newScore);
+       onScoreUpdate(newScore, newStreak);
     }
     if (onAnswerSubmit) {
        onAnswerSubmit(current, idx);
@@ -170,6 +214,9 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
 
   const handleHostNext = () => {
     setRevealed(true);
+    if (onReveal) {
+      onReveal();
+    }
     setTimeout(() => {
        if (triggerNextQuestion) {
           triggerNextQuestion();
@@ -190,7 +237,7 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
   if (done) {
     return (
       <div style={styles.page}>
-        <ScoreScreen score={score} total={total} onRestart={onRestart} />
+        <ScoreScreen score={score} total={total} onRestart={onRestart} onJoinNew={onJoinNew} leaderboard={lockedLeaderboard} isMultiplayer={isMultiplayer} />
       </div>
     );
   }
@@ -201,25 +248,54 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
       <header style={styles.header}>
         <div style={styles.headerTop}>
           <span style={styles.logo}>Kuizu</span>
-          <span style={styles.scoreChip}>
-            {isHostMode ? (
-              <span onClick={onRestart} style={{ cursor: "pointer", color: "#FF6B6B", fontWeight: 600 }}>
-                End Game
+            <div style={{ flex: 1, maxWidth: "1000px", display: "flex", justifyContent: "center", alignItems: "center", margin: "0 auto", gap: "16px" }}>
+              <div style={{ width: "100%" }}>
+                <ProgressBar current={current + (revealed ? 1 : 0)} total={total} />
+              </div>
+              <span style={{ color: "#B0BAC3", fontWeight: "bold", fontSize: "16px", whiteSpace: "nowrap", fontFamily: "'Syne', sans-serif" }}>
+                {Math.min(current + (revealed || isHostMode ? 1 : 0), total)} / {total}
               </span>
-            ) : (
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}><span style={{ fontWeight: 600 }}>Score: {score}/{total}</span><span onClick={onRestart} style={{ cursor: 'pointer', color: '#FF6B6B', fontWeight: 600 }}>End Game</span></div>
-            )}
-          </span>
-        </div>
-        <ProgressBar current={current + (revealed ? 1 : 0)} total={total} />
-      </header>
+            </div>
+            <span style={styles.scoreChip}>
+              {isHostMode ? (
+                showConfirmEnd ? (
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <span style={{ color: "#F1F2F6", fontWeight: 500 }}>End Game?</span>
+                    <span onClick={onRestart} style={{ cursor: "pointer", color: "#FF6B6B", fontWeight: 600 }}>Yes</span>
+                    <span onClick={() => setShowConfirmEnd(false)} style={{ cursor: "pointer", color: "#00D2D3", fontWeight: 600 }}>No</span>
+                  </div>
+                ) : (
+                  <span onClick={() => setShowConfirmEnd(true)} style={{ cursor: "pointer", color: "#FF6B6B", fontWeight: 600 }}>
+                    End Game
+                  </span>
+                )
+              ) : (
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                  {!isMultiplayer && <span style={{ fontWeight: 600 }}>Score: {score}/{total}</span>}
+                  {showConfirmEnd ? (
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      <span style={{ color: "#F1F2F6", fontWeight: 500 }}>Leave?</span>
+                      <span onClick={onRestart} style={{ cursor: "pointer", color: "#FF6B6B", fontWeight: 600 }}>Yes</span>
+                      <span onClick={() => setShowConfirmEnd(false)} style={{ cursor: "pointer", color: "#00D2D3", fontWeight: 600 }}>No</span>
+                    </div>
+                  ) : (
+                    <span onClick={() => setShowConfirmEnd(true)} style={{ cursor: 'pointer', color: '#FF6B6B', fontWeight: 600 }}>
+                      Leave Game
+                    </span>
+                  )}
+                </div>
+              )}
+            </span>
+          </div>
+        </header>
 
-      <main style={styles.main}>
-        {/* Question card */}
-        <div style={styles.questionCard} key={current}>
-          <div style={styles.qNumber}>Q{current + 1}</div>
-          <p style={styles.questionText}>{q.question}</p>
-        </div>
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", width: "100%" }}>
+        <main style={{...styles.main, overflowY: "auto"}}>
+          {/* Question card */}
+          <div style={styles.questionCard} key={current}>
+            <div style={styles.qNumber}>Q{current + 1}</div>
+            <p style={styles.questionText}>{q.question}</p>
+          </div>
 
         {/* Answer grid */}
         <div style={styles.grid}>
@@ -238,7 +314,7 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
                 }
               }
 
-              if (revealed) {
+              if (showResults) {
                 if (idx === q.correct_index) {
                   bg = color.bg;
                   extra = { outline: "4px solid #16213E", outlineOffset: "2px", transform: "scale(1.03)" };
@@ -249,6 +325,13 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
                   bg = color.bg;
                   extra = { opacity: 0.5, filter: "grayscale(50%)" };
                 }
+              } else if (revealed && !isHostMode) {
+                // User has answered but results not revealed yet
+                if (idx === selected) {
+                  extra = { outline: "4px solid #16213E", outlineOffset: "2px", transform: "scale(1.03)" };
+                } else {
+                  extra = { opacity: 0.5 };
+                }
               }
 
               return (
@@ -258,19 +341,19 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
                   onClick={() => handleSelect(idx)}
                   disabled={revealed || isHostMode}
                 >
-                  {isHostMode && revealed && (
+                  {isHostMode && showResults && (
                      <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: `${pct}%`, background: "rgba(255, 255, 255, 0.35)", zIndex: 1, transition: "width 0.6s ease-out" }} />
                   )}
                   <span style={{ ...styles.choiceShape, position: "relative", zIndex: 2 }}>
-                    {revealed && idx === q.correct_index ? (
+                    {showResults && idx === q.correct_index ? (
                       <span style={styles.tick}>&#10003;</span>
-                    ) : revealed && !isHostMode && idx === selected && idx !== q.correct_index ? (
+                    ) : showResults && !isHostMode && idx === selected && idx !== q.correct_index ? (
                       <span style={styles.cross}>&#10007;</span>
                     ) : (
                       color.label
                     )}
                   </span>
-                  <span style={{ ...styles.choiceText, position: "relative", zIndex: 2 }}>{choice}</span>
+                  <span style={{ ...styles.choiceText, position: "relative", zIndex: 2, fontSize: choice.length > 50 ? "clamp(18px, 1.5vw, 24px)" : choice.length > 30 ? "clamp(24px, 2.5vw, 36px)" : undefined }}>{choice}</span>
                 </button>
               );
             })}
@@ -279,35 +362,28 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
           {/* Feedback + next */}
           {revealed && !isHostMode && (
             <div style={styles.feedbackRow} key={"fb-" + current}>
-              <div style={selected === q.correct_index ? styles.feedbackCorrect : styles.feedbackWrong}>
-                {selected === q.correct_index
-                  ? "\u2713 Correct!"
-                  : `\u2717 The answer was: ${q.choices[q.correct_index]}`}
-              </div>
+              {showResults ? (
+                <>
+                  <div style={selected === q.correct_index ? styles.feedbackCorrect : styles.feedbackWrong}>
+                    {selected === q.correct_index
+                      ? "\u2713 Correct!"
+                      : `\u2717 The answer was: ${q.choices[q.correct_index]}`}   
+                  </div>
 
-              {leaderboard ? (
-                 <div style={styles.miniLeaderboard}>
-                   <h4 style={{ margin: "0 0 10px 0" }}>Live Leaderboard</h4>
-                   {Object.entries(leaderboard)
-                      .sort(([, a], [, b]) => b - a)
-                      .slice(0, 3)
-                      .map(([name, s], i) => (
-                        <div key={name} style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", padding: "4px 0" }}>
-                          <span>{i+1}. {name}</span>
-                          <span>{s} pts</span>
-                        </div>
-                      ))}
-                 </div>
-              ) : null}
-
-              {isMultiplayer ? (
-                <p style={{ textAlign: "center", color: "#B0BAC3", margin: "10px 0" }}>
-                  Waiting for the host to start the next question...
-                </p>
+                  {isMultiplayer ? (
+                    <p style={{ textAlign: "center", color: "#B0BAC3", margin: "10px 0" }}>
+                      Waiting for the host to start the next question...
+                    </p>
+                  ) : (
+                    <button style={styles.nextBtn} onClick={handleNextLocal}>     
+                      {localCurrent + 1 < total ? "Next question \u2192" : "See results \u2192"}
+                    </button>
+                  )}
+                </>
               ) : (
-                <button style={styles.nextBtn} onClick={handleNextLocal}>
-                  {localCurrent + 1 < total ? "Next question \u2192" : "See results \u2192"}
-                </button>
+                <div style={{...styles.feedbackCorrect, background: "#252A4A", color: "#00D2D3"}}>
+                  Waiting for host to reveal the answer...
+                </div>
               )}
             </div>
           )}
@@ -323,10 +399,75 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
               </button>
             </div>
           )}
+        </main>
+        
+        {isHostMode && lockedLeaderboard && (
+           <div style={{
+              width: "clamp(300px, 25vw, 600px)",
+              background: "#252A4A",
+              border: "1px solid #0F3460",
+              borderRadius: "clamp(16px, 1.5vw, 24px)",
+              margin: "clamp(16px, 2vw, 32px) clamp(16px, 2vw, 32px) clamp(16px, 2vw, 32px) 0",
+              display: "flex",
+              flexDirection: "column",
+              padding: "clamp(16px, 1.5vw, 24px)",
+              boxShadow: "0 12px 48px rgba(0,0,0,0.3)",
+              maxHeight: "calc(100vh - 160px)",
+              overflowY: "auto"
+           }}>
+              <h2 style={{ margin: "0 0 clamp(16px, 1.5vw, 24px) 0", fontSize: "clamp(24px, 2vw, 32px)", color: "#F1F2F6", fontFamily: "'Syne', sans-serif", borderBottom: "1px solid #16213E", paddingBottom: "clamp(12px, 1vw, 16px)" }}>
+                Live Leaderboard
+              </h2>
+              <div ref={leaderboardRef} style={{ display: "flex", flexDirection: "column", gap: "clamp(12px, 1vw, 16px)" }}>
+                {Object.entries(lockedLeaderboard)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([name, score], i) => {
+                    const playerStreak = lockedStreaks && lockedStreaks[name] ? lockedStreaks[name] : 0;
+                    const isOnStreak = playerStreak >= 2;
+                    
+                    return (
+                      <div key={name} style={{ 
+                        display: "flex", 
+                        justifyContent: "space-between", 
+                        alignItems: "center", 
+                        padding: "20px", 
+                        background: isOnStreak ? "linear-gradient(90deg, rgba(255,159,67,0.1), rgba(255,107,107,0.1))" : "#16213E", 
+                        borderRadius: "16px",
+                        border: isOnStreak ? "1px solid #FF9F43" : "1px solid #0F3460",
+                        position: "relative",
+                        animation: isOnStreak ? "firePulse 1.5s infinite alternate" : "none"
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                          <span style={{ 
+                            fontSize: "24px", 
+                            fontWeight: "bold", 
+                            color: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#B0BAC3",
+                            width: "36px"
+                          }}>
+                            {i + 1}.
+                          </span>
+                          <span style={{ fontSize: "24px", fontWeight: "600", color: "#F1F2F6" }}>
+                            {name}
+                          </span>
+                          {isOnStreak && <span style={{ fontSize: "20px", filter: "drop-shadow(0 0 4px rgba(255,159,67,0.8))" }}>🔥 {playerStreak}</span>}
+                        </div>
+                        <span style={{ fontSize: "24px", fontWeight: "bold", color: "#00D2D3" }}>
+                          {score}
+                        </span>
+                      </div>
+                    );
+                })}
+              </div>
+           </div>
+        )}
+      </div>
 
-          </main>
-          <style>{`
-            @keyframes slideUp {
+      <style>{`
+        @keyframes firePulse {
+          0% { box-shadow: 0 0 5px rgba(255, 107, 107, 0.2); border-color: rgba(255, 159, 67, 0.5); }
+          100% { box-shadow: 0 0 15px rgba(255, 107, 107, 0.6); border-color: rgba(255, 159, 67, 1); }
+        }
+        @keyframes slideUp {
             from { opacity:0; transform: translateY(16px); }
             to   { opacity:1; transform: translateY(0); }
           }
@@ -347,8 +488,7 @@ const styles = {
   header: {
     display: "flex",
     flexDirection: "column",
-    padding: "24px 0",
-    gap: "24px",
+    padding: "clamp(12px, 1.5vw, 24px) 0",
     background: "#16213E",
     borderBottom: "1px solid #1e1e2e",
     boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
@@ -358,6 +498,7 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     padding: "0 32px",
+    gap: "32px",
   },
   logo: {
     fontFamily: "'Syne', sans-serif",
@@ -379,8 +520,8 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    padding: "32px 20px 40px",
-    maxWidth: "760px",
+    padding: "clamp(24px, 4vh, 48px) clamp(16px, 2vw, 30px) clamp(30px, 5vh, 60px)",
+    maxWidth: "1600px",
     margin: "0 auto",
     width: "100%",
     boxSizing: "border-box",
@@ -388,10 +529,10 @@ const styles = {
   questionCard: {
     background: "#252A4A",
     border: "1px solid #0F3460",
-    borderRadius: "24px",
-    padding: "48px 40px",
+    borderRadius: "clamp(20px, 2vw, 32px)",
+    padding: "clamp(40px, 6vh, 100px) clamp(30px, 4vw, 60px)",
     width: "100%",
-    marginBottom: "40px",
+    marginBottom: "clamp(30px, 4vh, 60px)",
     animation: "slideUp 0.35s ease both",
     boxSizing: "border-box",
     textAlign: "center",
@@ -400,18 +541,18 @@ const styles = {
   qNumber: {
     display: "inline-block",
     background: "rgba(124, 111, 255, 0.15)",
-    padding: "6px 16px",
+    padding: "clamp(6px, 1vh, 8px) clamp(16px, 2vw, 24px)",
     borderRadius: "20px",
     fontFamily: "'Syne', sans-serif",
     fontWeight: 700,
-    fontSize: "16px",
+    fontSize: "clamp(16px, 1.5vw, 20px)",
     color: "#00D2D3",
-    marginBottom: "24px",
+    marginBottom: "clamp(16px, 3vh, 32px)",
     letterSpacing: "1px",
     textTransform: "uppercase",
   },
   questionText: {
-    fontSize: "36px",
+    fontSize: "clamp(36px, 4vw, 64px)",
     fontWeight: 700,
     lineHeight: 1.3,
     margin: 0,
@@ -421,42 +562,50 @@ const styles = {
   grid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
-    gap: "12px",
+    gap: "clamp(16px, 2vw, 32px)",
     width: "100%",
-    marginBottom: "20px",
+    marginBottom: "clamp(16px, 3vh, 32px)",
   },
   choiceBtn: {
     display: "flex",
     alignItems: "center",
-    gap: "14px",
-    padding: "18px 20px",
-    borderRadius: "12px",
+    gap: "clamp(16px, 2vw, 32px)",
+    padding: "clamp(24px, 4vh, 40px) clamp(24px, 3vw, 48px)",
+    borderRadius: "clamp(16px, 1.5vw, 24px)",
     border: "none",
     cursor: "pointer",
     textAlign: "left",
-    fontSize: "15px",
+    fontSize: "clamp(24px, 3.5vw, 56px)",
     fontFamily: "'DM Sans', sans-serif",
-    fontWeight: 500,
+    fontWeight: 600,
     color: "#16213E",
     transition: "opacity 0.2s, transform 0.15s, outline 0.1s",
-    minHeight: "72px",
+    height: "clamp(150px, 20vh, 240px)",
+    maxHeight: "240px",
+    overflow: "hidden",
   },
   choiceShape: {
-    fontSize: "18px",
+    fontSize: "clamp(32px, 3vw, 48px)",
     flexShrink: 0,
     opacity: 0.85,
   },
   choiceText: {
     flex: 1,
     lineHeight: 1.3,
+    wordBreak: "break-word",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    display: "-webkit-box",
+    WebkitLineClamp: 4,
+    WebkitBoxOrient: "vertical",
   },
   tick: {
-    fontSize: "22px",
+    fontSize: "40px",
     fontWeight: 700,
     flexShrink: 0,
   },
   cross: {
-    fontSize: "20px",
+    fontSize: "36px",
     flexShrink: 0,
     opacity: 0.7,
   },

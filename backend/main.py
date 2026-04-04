@@ -46,6 +46,7 @@ async def websocket_host(websocket: WebSocket):
                 "host": websocket,
                 "players": {},
                 "scores": {},
+                "streaks": {},
                 "quiz": data.get("quiz")
             }
             await websocket.send_json({"type": "created", "pin": pin})
@@ -69,6 +70,11 @@ async def websocket_host(websocket: WebSocket):
                     await manager.broadcast_to_players(pin, {
                         "type": "end_game"
                     })
+                elif msg.get("type") == "reveal_answer":
+                    await manager.broadcast_to_players(pin, {
+                        "type": "reveal_answer",
+                        "correct_answer": msg.get("correct_answer")
+                    })
     except WebSocketDisconnect:
         # We need to find which room this host was running and close it
         for pin, room in list(manager.rooms.items()):
@@ -90,43 +96,81 @@ async def websocket_join(websocket: WebSocket, pin: str, name: str):
         if room:
             if "scores" not in room:
                 room["scores"] = {}
+            if "streaks" not in room:
+                room["streaks"] = {}
             room["scores"][name] = 0
+            room["streaks"][name] = 0
             scores = room["scores"]
-            await manager.broadcast_to_players(pin, {"type": "leaderboard", "scores": scores})
+            streaks = room["streaks"]
+            await manager.broadcast_to_players(pin, {"type": "leaderboard", "scores": scores, "streaks": streaks})
             try:
-                await room["host"].send_json({"type": "leaderboard", "scores": scores})
+                await room["host"].send_json({"type": "leaderboard", "scores": scores, "streaks": streaks})
             except Exception:
                 pass
 
         while True:
             data = await websocket.receive_json()
             if data.get("type") == "score_update":
-                # Forward the score to the host and players
+                # We now ignore client-side score tracking for the leaderboard
+                # because we calculate arcade points server-side based on rank and multipliers
+                pass
+            elif data.get("type") == "answer_submit":
                 room = manager.get_room(pin)
                 if room:
-                    room["scores"][name] = data.get("score", 0)
+                    q_idx = data.get("questionIndex")
+                    o_idx = data.get("optionIndex")
+
+                    if "answer_ranks" not in room:
+                        room["answer_ranks"] = {}
+                    if q_idx not in room["answer_ranks"]:
+                        room["answer_ranks"][q_idx] = 0
+
+                    quiz = room.get("quiz", {})
+                    questions = quiz.get("questions", [])
+
+                    if 0 <= q_idx < len(questions):
+                        correct_idx = questions[q_idx].get("correct_index")
+                        if correct_idx == o_idx:
+                            rank = room["answer_ranks"][q_idx] + 1
+                            room["answer_ranks"][q_idx] = rank
+                            
+                            points = 500
+                            if rank == 1: points = 1000
+                            elif rank == 2: points = 850
+                            elif rank == 3: points = 700
+                            
+                            streak = room["streaks"].get(name, 0) + 1
+                            room["streaks"][name] = streak
+                            
+                            # Streak multiplier (up to 5x)
+                            multiplier = min(streak, 5) * 100
+                            room["scores"][name] = room["scores"].get(name, 0) + points + multiplier
+                        else:
+                            room["streaks"][name] = 0
+                            
                     scores = room["scores"]
-                    await manager.broadcast_to_players(pin, {"type": "leaderboard", "scores": scores})
+                    streaks = room["streaks"]
+                    
+                    # Update leaderboard immediately (Quiz.jsx delays showing it until reveal)
+                    await manager.broadcast_to_players(pin, {"type": "leaderboard", "scores": scores, "streaks": streaks})
+
                     if "host" in room:
                         try:
+                            # Forward answer_submit to host for answer distribution
+                            await room["host"].send_json({
+                                "type": "answer_submit",
+                                "name": name,
+                                "questionIndex": q_idx,
+                                "optionIndex": o_idx
+                            })
+                            # Send host the new leaderboard calculation
                             await room["host"].send_json({
                                 "type": "leaderboard",
-                                "scores": scores
+                                "scores": scores,
+                                "streaks": streaks
                             })
                         except Exception:
                             pass
-            elif data.get("type") == "answer_submit":
-                room = manager.get_room(pin)
-                if room and "host" in room:
-                    try:
-                        await room["host"].send_json({
-                            "type": "answer_submit",
-                            "name": name,
-                            "questionIndex": data.get("questionIndex"),
-                            "optionIndex": data.get("optionIndex")
-                        })
-                    except Exception:
-                        pass
     except WebSocketDisconnect:
         await manager.remove_player(pin, name)
         room = manager.get_room(pin)

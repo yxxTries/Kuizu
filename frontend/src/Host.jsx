@@ -6,6 +6,7 @@ export default function Host({ quiz, onEnd }) {
   const [pin, setPin] = useState(null);
   const [players, setPlayers] = useState([]);
   const [scores, setScores] = useState({});
+  const [streaks, setStreaks] = useState({});
   const [hostAnswers, setHostAnswers] = useState({});
   const [status, setStatus] = useState("connecting"); // connecting, lobby, playing
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -41,12 +42,15 @@ export default function Host({ quiz, onEnd }) {
       } else if (data.type === "player_joined") {
         setPlayers(p => [...p, data.name]);
         setScores(s => ({ ...s, [data.name]: 0 }));
+        setStreaks(s => ({ ...s, [data.name]: 0 }));
       } else if (data.type === "player_left") {
         setPlayers(p => p.filter(name => name !== data.name));
       } else if (data.type === "leaderboard") {
         setScores(data.scores);
+        if (data.streaks) setStreaks(data.streaks);
       } else if (data.type === "score_update") {
         setScores(s => ({ ...s, [data.name]: data.score }));
+        if (data.streak !== undefined) setStreaks(s => ({ ...s, [data.name]: data.streak }));
       } else if (data.type === "answer_submit") {
           console.log("Host received answer_submit!", data);
           setHostAnswers(prev => {
@@ -80,6 +84,10 @@ export default function Host({ quiz, onEnd }) {
     ws.current.send(JSON.stringify({ type: "next_question", index: 0 }));
   };
 
+  const handleHostNext = () => {
+    ws.current.send(JSON.stringify({ type: "reveal_answer" }));
+  };
+
   const handleNext = () => {
     const nextIdx = currentQuestionIndex + 1;
     if (nextIdx >= quiz.questions.length) {
@@ -101,8 +109,15 @@ export default function Host({ quiz, onEnd }) {
   };
 
   return (
-    <div style={{ padding: 40, textAlign: "center", minHeight: "100vh", display: "flex", flexDirection: "column", gap: 20 }}>
-      <h1>{status === "lobby" ? "Game Lobby - Host" : "Kuizu"}</h1>
+    <div style={{ 
+      padding: status === "playing" ? 0 : 40, 
+      textAlign: "center", 
+      minHeight: "100vh", 
+      display: "flex", 
+      flexDirection: "column", 
+      gap: status === "playing" ? 0 : 20 
+    }}>
+      {status !== "playing" && <h1>{status === "lobby" ? "Game Lobby - Host" : "Kuizu"}</h1>}
       
       {status === "connecting" && <p>Connecting to server...</p>}
 
@@ -332,7 +347,9 @@ export default function Host({ quiz, onEnd }) {
                }}
                currentQuestionIndex={currentQuestionIndex}
                leaderboard={scores}
+               streaks={streaks}
                hostAnswers={hostAnswers[currentQuestionIndex] || {}}
+               onReveal={handleHostNext}
                triggerNextQuestion={handleNext}
             />
          </div>
@@ -363,7 +380,7 @@ export default function Host({ quiz, onEnd }) {
                             <span style={{ fontSize: "24px", color: textColor }}>{i + 1}.</span>
                           )}
                        </div>
-                       <span style={{ fontSize: "24px", fontWeight: i < 3 ? "bold" : "normal", color: i === 0 ? "#00D2D3" : "#16213E" }}>{name}</span>
+                       <span style={{ fontSize: "24px", fontWeight: i < 3 ? "bold" : "normal", color: i === 0 ? "#00D2D3" : "#F1F2F6" }}>{name}</span>
                      </div>
                      <span style={{ fontSize: "28px", fontWeight: "bold", color: textColor }}>{score} pts</span>
                    </div>
