@@ -123,7 +123,7 @@ const scoreStyles = {
   },
 };
 
-export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, currentQuestionIndex = null, leaderboard = null, isHostMode = false, hostAnswers = {}, triggerNextQuestion = null }) {
+export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, currentQuestionIndex = null, leaderboard = null, streaks = null, isHostMode = false, hostAnswers = {}, triggerNextQuestion = null, hostRevealed = false, onReveal = null }) {
   const { questions } = quiz;
   const total = questions.length;
 
@@ -135,6 +135,7 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
   const [selected,  setSelected]  = useState(null);   // index of chosen answer 
   const [revealed,  setRevealed]  = useState(false);  // show correct/wrong     
   const [score,     setScore]     = useState(0);
+  const [streak,    setStreak]    = useState(0);
   const [done,      setDone]      = useState(false);
 
   // When host moves to the next question, reset selection state
@@ -151,17 +152,25 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
 
   const q = questions[current < total ? current : total - 1] || questions[0];
 
+  const showResults = isMultiplayer && !isHostMode ? hostRevealed : revealed;
+
   const handleSelect = (idx) => {
     if (revealed || isHostMode) return;
     setSelected(idx);
     setRevealed(true);
     let newScore = score;
+    let newStreak = streak;
     if (idx === q.correct_index) {
        newScore += 1;
+       newStreak += 1;
        setScore(newScore);
+       setStreak(newStreak);
+    } else {
+       newStreak = 0;
+       setStreak(newStreak);
     }
     if (onScoreUpdate) {
-       onScoreUpdate(newScore);
+       onScoreUpdate(newScore, newStreak);
     }
     if (onAnswerSubmit) {
        onAnswerSubmit(current, idx);
@@ -170,6 +179,9 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
 
   const handleHostNext = () => {
     setRevealed(true);
+    if (onReveal) {
+      onReveal();
+    }
     setTimeout(() => {
        if (triggerNextQuestion) {
           triggerNextQuestion();
@@ -207,19 +219,23 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
                 End Game
               </span>
             ) : (
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}><span style={{ fontWeight: 600 }}>Score: {score}/{total}</span><span onClick={onRestart} style={{ cursor: 'pointer', color: '#FF6B6B', fontWeight: 600 }}>End Game</span></div>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                {!isMultiplayer && <span style={{ fontWeight: 600 }}>Score: {score}/{total}</span>}
+                <span onClick={onRestart} style={{ cursor: 'pointer', color: '#FF6B6B', fontWeight: 600 }}>End Game</span>
+              </div>
             )}
           </span>
         </div>
         <ProgressBar current={current + (revealed ? 1 : 0)} total={total} />
       </header>
 
-      <main style={styles.main}>
-        {/* Question card */}
-        <div style={styles.questionCard} key={current}>
-          <div style={styles.qNumber}>Q{current + 1}</div>
-          <p style={styles.questionText}>{q.question}</p>
-        </div>
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", width: "100%" }}>
+        <main style={{...styles.main, overflowY: "auto"}}>
+          {/* Question card */}
+          <div style={styles.questionCard} key={current}>
+            <div style={styles.qNumber}>Q{current + 1}</div>
+            <p style={styles.questionText}>{q.question}</p>
+          </div>
 
         {/* Answer grid */}
         <div style={styles.grid}>
@@ -238,7 +254,7 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
                 }
               }
 
-              if (revealed) {
+              if (showResults) {
                 if (idx === q.correct_index) {
                   bg = color.bg;
                   extra = { outline: "4px solid #16213E", outlineOffset: "2px", transform: "scale(1.03)" };
@@ -249,6 +265,13 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
                   bg = color.bg;
                   extra = { opacity: 0.5, filter: "grayscale(50%)" };
                 }
+              } else if (revealed && !isHostMode) {
+                // User has answered but results not revealed yet
+                if (idx === selected) {
+                  extra = { outline: "4px solid #16213E", outlineOffset: "2px", transform: "scale(1.03)" };
+                } else {
+                  extra = { opacity: 0.5 };
+                }
               }
 
               return (
@@ -258,19 +281,19 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
                   onClick={() => handleSelect(idx)}
                   disabled={revealed || isHostMode}
                 >
-                  {isHostMode && revealed && (
+                  {isHostMode && showResults && (
                      <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: `${pct}%`, background: "rgba(255, 255, 255, 0.35)", zIndex: 1, transition: "width 0.6s ease-out" }} />
                   )}
                   <span style={{ ...styles.choiceShape, position: "relative", zIndex: 2 }}>
-                    {revealed && idx === q.correct_index ? (
+                    {showResults && idx === q.correct_index ? (
                       <span style={styles.tick}>&#10003;</span>
-                    ) : revealed && !isHostMode && idx === selected && idx !== q.correct_index ? (
+                    ) : showResults && !isHostMode && idx === selected && idx !== q.correct_index ? (
                       <span style={styles.cross}>&#10007;</span>
                     ) : (
                       color.label
                     )}
                   </span>
-                  <span style={{ ...styles.choiceText, position: "relative", zIndex: 2 }}>{choice}</span>
+                  <span style={{ ...styles.choiceText, position: "relative", zIndex: 2, fontSize: choice.length > 50 ? "clamp(18px, 1.5vw, 24px)" : choice.length > 30 ? "clamp(24px, 2.5vw, 36px)" : undefined }}>{choice}</span>
                 </button>
               );
             })}
@@ -279,35 +302,28 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
           {/* Feedback + next */}
           {revealed && !isHostMode && (
             <div style={styles.feedbackRow} key={"fb-" + current}>
-              <div style={selected === q.correct_index ? styles.feedbackCorrect : styles.feedbackWrong}>
-                {selected === q.correct_index
-                  ? "\u2713 Correct!"
-                  : `\u2717 The answer was: ${q.choices[q.correct_index]}`}
-              </div>
+              {showResults ? (
+                <>
+                  <div style={selected === q.correct_index ? styles.feedbackCorrect : styles.feedbackWrong}>
+                    {selected === q.correct_index
+                      ? "\u2713 Correct!"
+                      : `\u2717 The answer was: ${q.choices[q.correct_index]}`}   
+                  </div>
 
-              {leaderboard ? (
-                 <div style={styles.miniLeaderboard}>
-                   <h4 style={{ margin: "0 0 10px 0" }}>Live Leaderboard</h4>
-                   {Object.entries(leaderboard)
-                      .sort(([, a], [, b]) => b - a)
-                      .slice(0, 3)
-                      .map(([name, s], i) => (
-                        <div key={name} style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", padding: "4px 0" }}>
-                          <span>{i+1}. {name}</span>
-                          <span>{s} pts</span>
-                        </div>
-                      ))}
-                 </div>
-              ) : null}
-
-              {isMultiplayer ? (
-                <p style={{ textAlign: "center", color: "#B0BAC3", margin: "10px 0" }}>
-                  Waiting for the host to start the next question...
-                </p>
+                  {isMultiplayer ? (
+                    <p style={{ textAlign: "center", color: "#B0BAC3", margin: "10px 0" }}>
+                      Waiting for the host to start the next question...
+                    </p>
+                  ) : (
+                    <button style={styles.nextBtn} onClick={handleNextLocal}>     
+                      {localCurrent + 1 < total ? "Next question \u2192" : "See results \u2192"}
+                    </button>
+                  )}
+                </>
               ) : (
-                <button style={styles.nextBtn} onClick={handleNextLocal}>
-                  {localCurrent + 1 < total ? "Next question \u2192" : "See results \u2192"}
-                </button>
+                <div style={{...styles.feedbackCorrect, background: "#252A4A", color: "#00D2D3"}}>
+                  Waiting for host to reveal the answer...
+                </div>
               )}
             </div>
           )}
@@ -323,10 +339,75 @@ export default function Quiz({ quiz, onRestart, onScoreUpdate, onAnswerSubmit, c
               </button>
             </div>
           )}
+        </main>
+        
+        {isHostMode && leaderboard && (
+           <div style={{ 
+              width: "600px", 
+              background: "#252A4A", 
+              border: "1px solid #0F3460",
+              borderRadius: "24px",
+              margin: "32px 32px 32px 0",
+              display: "flex", 
+              flexDirection: "column",
+              padding: "24px",
+              boxShadow: "0 12px 48px rgba(0,0,0,0.3)",
+              maxHeight: "calc(100vh - 160px)",
+              overflowY: "auto"
+           }}>
+              <h2 style={{ margin: "0 0 24px 0", fontSize: "32px", color: "#F1F2F6", fontFamily: "'Syne', sans-serif", borderBottom: "1px solid #16213E", paddingBottom: "16px" }}>
+                Live Leaderboard
+              </h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {Object.entries(leaderboard)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([name, score], i) => {
+                    const playerStreak = streaks && streaks[name] ? streaks[name] : 0;
+                    const isOnStreak = playerStreak >= 2;
+                    
+                    return (
+                      <div key={name} style={{ 
+                        display: "flex", 
+                        justifyContent: "space-between", 
+                        alignItems: "center", 
+                        padding: "20px", 
+                        background: isOnStreak ? "linear-gradient(90deg, rgba(255,159,67,0.1), rgba(255,107,107,0.1))" : "#16213E", 
+                        borderRadius: "16px",
+                        border: isOnStreak ? "1px solid #FF9F43" : "1px solid #0F3460",
+                        position: "relative",
+                        animation: isOnStreak ? "firePulse 1.5s infinite alternate" : "none"
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                          <span style={{ 
+                            fontSize: "24px", 
+                            fontWeight: "bold", 
+                            color: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#B0BAC3",
+                            width: "36px"
+                          }}>
+                            {i + 1}.
+                          </span>
+                          <span style={{ fontSize: "24px", fontWeight: "600", color: "#F1F2F6" }}>
+                            {name}
+                          </span>
+                          {isOnStreak && <span style={{ fontSize: "20px", filter: "drop-shadow(0 0 4px rgba(255,159,67,0.8))" }}>🔥 {playerStreak}</span>}
+                        </div>
+                        <span style={{ fontSize: "24px", fontWeight: "bold", color: "#00D2D3" }}>
+                          {score}
+                        </span>
+                      </div>
+                    );
+                })}
+              </div>
+           </div>
+        )}
+      </div>
 
-          </main>
-          <style>{`
-            @keyframes slideUp {
+      <style>{`
+        @keyframes firePulse {
+          0% { box-shadow: 0 0 5px rgba(255, 107, 107, 0.2); border-color: rgba(255, 159, 67, 0.5); }
+          100% { box-shadow: 0 0 15px rgba(255, 107, 107, 0.6); border-color: rgba(255, 159, 67, 1); }
+        }
+        @keyframes slideUp {
             from { opacity:0; transform: translateY(16px); }
             to   { opacity:1; transform: translateY(0); }
           }
@@ -379,8 +460,8 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    padding: "32px 20px 40px",
-    maxWidth: "760px",
+    padding: "48px 30px 60px",
+    maxWidth: "1600px",
     margin: "0 auto",
     width: "100%",
     boxSizing: "border-box",
@@ -388,10 +469,10 @@ const styles = {
   questionCard: {
     background: "#252A4A",
     border: "1px solid #0F3460",
-    borderRadius: "24px",
-    padding: "48px 40px",
+    borderRadius: "32px",
+    padding: "100px 60px",
     width: "100%",
-    marginBottom: "40px",
+    marginBottom: "60px",
     animation: "slideUp 0.35s ease both",
     boxSizing: "border-box",
     textAlign: "center",
@@ -400,18 +481,18 @@ const styles = {
   qNumber: {
     display: "inline-block",
     background: "rgba(124, 111, 255, 0.15)",
-    padding: "6px 16px",
+    padding: "8px 24px",
     borderRadius: "20px",
     fontFamily: "'Syne', sans-serif",
     fontWeight: 700,
-    fontSize: "16px",
+    fontSize: "20px",
     color: "#00D2D3",
-    marginBottom: "24px",
+    marginBottom: "32px",
     letterSpacing: "1px",
     textTransform: "uppercase",
   },
   questionText: {
-    fontSize: "36px",
+    fontSize: "64px",
     fontWeight: 700,
     lineHeight: 1.3,
     margin: 0,
@@ -421,42 +502,50 @@ const styles = {
   grid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
-    gap: "12px",
+    gap: "32px",
     width: "100%",
-    marginBottom: "20px",
+    marginBottom: "32px",
   },
   choiceBtn: {
     display: "flex",
     alignItems: "center",
-    gap: "14px",
-    padding: "18px 20px",
-    borderRadius: "12px",
+    gap: "32px",
+    padding: "40px 48px",
+    borderRadius: "24px",
     border: "none",
     cursor: "pointer",
     textAlign: "left",
-    fontSize: "15px",
+    fontSize: "clamp(32px, 4vw, 56px)",
     fontFamily: "'DM Sans', sans-serif",
-    fontWeight: 500,
+    fontWeight: 600,
     color: "#16213E",
     transition: "opacity 0.2s, transform 0.15s, outline 0.1s",
-    minHeight: "72px",
+    height: "240px",
+    maxHeight: "240px",
+    overflow: "hidden",
   },
   choiceShape: {
-    fontSize: "18px",
+    fontSize: "48px",
     flexShrink: 0,
     opacity: 0.85,
   },
   choiceText: {
     flex: 1,
     lineHeight: 1.3,
+    wordBreak: "break-word",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    display: "-webkit-box",
+    WebkitLineClamp: 4,
+    WebkitBoxOrient: "vertical",
   },
   tick: {
-    fontSize: "22px",
+    fontSize: "40px",
     fontWeight: 700,
     flexShrink: 0,
   },
   cross: {
-    fontSize: "20px",
+    fontSize: "36px",
     flexShrink: 0,
     opacity: 0.7,
   },

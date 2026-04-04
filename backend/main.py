@@ -46,6 +46,7 @@ async def websocket_host(websocket: WebSocket):
                 "host": websocket,
                 "players": {},
                 "scores": {},
+                "streaks": {},
                 "quiz": data.get("quiz")
             }
             await websocket.send_json({"type": "created", "pin": pin})
@@ -69,6 +70,11 @@ async def websocket_host(websocket: WebSocket):
                     await manager.broadcast_to_players(pin, {
                         "type": "end_game"
                     })
+                elif msg.get("type") == "reveal_answer":
+                    await manager.broadcast_to_players(pin, {
+                        "type": "reveal_answer",
+                        "correct_answer": msg.get("correct_answer")
+                    })
     except WebSocketDisconnect:
         # We need to find which room this host was running and close it
         for pin, room in list(manager.rooms.items()):
@@ -90,11 +96,15 @@ async def websocket_join(websocket: WebSocket, pin: str, name: str):
         if room:
             if "scores" not in room:
                 room["scores"] = {}
+            if "streaks" not in room:
+                room["streaks"] = {}
             room["scores"][name] = 0
+            room["streaks"][name] = 0
             scores = room["scores"]
-            await manager.broadcast_to_players(pin, {"type": "leaderboard", "scores": scores})
+            streaks = room["streaks"]
+            await manager.broadcast_to_players(pin, {"type": "leaderboard", "scores": scores, "streaks": streaks})
             try:
-                await room["host"].send_json({"type": "leaderboard", "scores": scores})
+                await room["host"].send_json({"type": "leaderboard", "scores": scores, "streaks": streaks})
             except Exception:
                 pass
 
@@ -105,13 +115,16 @@ async def websocket_join(websocket: WebSocket, pin: str, name: str):
                 room = manager.get_room(pin)
                 if room:
                     room["scores"][name] = data.get("score", 0)
+                    room["streaks"][name] = data.get("streak", 0)
                     scores = room["scores"]
-                    await manager.broadcast_to_players(pin, {"type": "leaderboard", "scores": scores})
+                    streaks = room["streaks"]
+                    await manager.broadcast_to_players(pin, {"type": "leaderboard", "scores": scores, "streaks": streaks})
                     if "host" in room:
                         try:
                             await room["host"].send_json({
                                 "type": "leaderboard",
-                                "scores": scores
+                                "scores": scores,
+                                "streaks": streaks
                             })
                         except Exception:
                             pass
