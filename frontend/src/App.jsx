@@ -6,54 +6,9 @@ import Host from "./Host.jsx";
 import Join from "./Join.jsx";
 import Discover from "./Discover.jsx";
 import MyGames from "./MyGames.jsx";
+import MyProfile from "./MyProfile.jsx";
 import AuthModal from "./AuthModal.jsx";
 import { getCurrentUser, logout, saveMyGame } from "./api";
-
-const USERNAME_KEY_PREFIX = "quizify_username_";
-
-function generateRandomUsername() {
-  const adjectives = [
-    "Swift",
-    "Bright",
-    "Lucky",
-    "Neon",
-    "Nova",
-    "Rapid",
-    "Smart",
-    "Cosmic",
-    "Pixel",
-    "Sonic",
-  ];
-  const nouns = [
-    "Falcon",
-    "Panda",
-    "Comet",
-    "Wizard",
-    "Rider",
-    "Tiger",
-    "Phoenix",
-    "Otter",
-    "Voyager",
-    "Sprinter",
-  ];
-
-  const left = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const right = nouns[Math.floor(Math.random() * nouns.length)];
-  const suffix = Math.floor(100 + Math.random() * 900);
-  return `${left}${right}${suffix}`;
-}
-
-function getOrCreateUsername(userId) {
-  const key = `${USERNAME_KEY_PREFIX}${userId}`;
-  const existing = window.localStorage.getItem(key);
-  if (existing) {
-    return existing;
-  }
-
-  const generated = generateRandomUsername();
-  window.localStorage.setItem(key, generated);
-  return generated;
-}
 
 const globalStyle = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -76,7 +31,7 @@ const globalStyle = `
 `;
 
 export default function App() {
-  // "upload" | "preview" | "quiz" | "host" | "join" | "discover" | "profile" | "games" | "settings"
+  // "upload" | "preview" | "quiz" | "host" | "join" | "discover" | "profile" | "games"
   const [page, setPage] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("pin")) return "join";
@@ -92,12 +47,7 @@ export default function App() {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef(null);
 
-  const username = useMemo(() => {
-    if (!user?.id) {
-      return "";
-    }
-    return getOrCreateUsername(user.id);
-  }, [user]);
+  const username = user?.username || user?.email?.split("@")[0] || "";
 
   const profileInitial = useMemo(() => {
     if (username) {
@@ -306,13 +256,6 @@ export default function App() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setPage("settings"); setIsProfileMenuOpen(false); }}
-                    style={{ width: "100%", textAlign: "left", padding: "10px 12px", border: "none", background: "transparent", color: "#cfe3f9", cursor: "pointer" }}
-                  >
-                    My Settings
-                  </button>
-                  <button
-                    type="button"
                     onClick={handleLogout}
                     style={{ width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderTop: "1px solid #264363", background: "transparent", color: "#ffb7bf", cursor: "pointer" }}
                   >
@@ -403,10 +346,12 @@ export default function App() {
       {page === "join"    && <Join    initialPin={joinPin} onExit={handleRestart} />}
       {page === "discover" && <Discover onBack={handleRestart} onPlay={handlePlayFromDiscover} />}
       {page === "profile" && (
-        <div style={{ padding: "100px 24px", textAlign: "center" }}>
-          <h2 style={{ fontSize: 34, marginBottom: 8 }}>My Profile</h2>
-          <p style={{ color: "#9bb3cb" }}>This page will be built next. Signed in as {username || user?.email}.</p>
-        </div>
+        <MyProfile
+          user={user}
+          onBack={handleRestart}
+          onRequireAuth={() => setIsAuthOpen(true)}
+          onUserUpdated={setUser}
+        />
       )}
       {page === "games" && (
         <MyGames
@@ -415,12 +360,6 @@ export default function App() {
           onPlay={handlePlayFromMyGames}
           onRequireAuth={() => setIsAuthOpen(true)}
         />
-      )}
-      {page === "settings" && (
-        <div style={{ padding: "100px 24px", textAlign: "center" }}>
-          <h2 style={{ fontSize: 34, marginBottom: 8 }}>My Settings</h2>
-          <p style={{ color: "#9bb3cb" }}>This page will be built next.</p>
-        </div>
       )}
       {isAuthOpen && (
         <AuthModal

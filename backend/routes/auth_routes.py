@@ -7,12 +7,14 @@ from core.config import REFRESH_TOKEN_COOKIE
 from middleware.auth_middleware import CurrentUser
 from middleware.rate_limit import rate_limit
 from schemas.auth import (
+    ChangePasswordRequest,
     ForgotPasswordRequest,
     ForgotPasswordResponse,
     LoginRequest,
     MessageResponse,
     RegisterRequest,
     ResetPasswordRequest,
+    UpdateProfileRequest,
     UserResponse,
 )
 
@@ -47,7 +49,7 @@ def refresh(
     refresh_token: Annotated[str | None, Cookie(alias=REFRESH_TOKEN_COOKIE)] = None,
 ):
     user = auth_controller.refresh(response=response, refresh_token=refresh_token)
-    return UserResponse(id=user.id, email=user.email)
+    return UserResponse(id=user.id, email=user.email, username=user.username)
 
 
 @router.post("/logout", response_model=MessageResponse)
@@ -59,6 +61,25 @@ def logout(response: Response):
 @router.get("/me", response_model=UserResponse)
 def me(current_user: CurrentUser):
     return UserResponse.model_validate(current_user)
+
+
+@router.patch("/me", response_model=UserResponse)
+def update_me(request: UpdateProfileRequest, current_user: CurrentUser):
+    return auth_controller.update_profile(
+        user_id=current_user["id"],
+        email=request.email,
+        username=request.username,
+    )
+
+
+@router.post("/change-password", response_model=MessageResponse)
+def change_password(request: ChangePasswordRequest, current_user: CurrentUser):
+    data = auth_controller.change_password(
+        user_id=current_user["id"],
+        current_password=request.current_password,
+        new_password=request.new_password,
+    )
+    return MessageResponse.model_validate(data)
 
 
 @router.post(

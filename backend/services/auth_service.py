@@ -7,10 +7,12 @@ from core.config import RESET_TOKEN_EXPIRES_MINUTES
 from core.security import hash_password, hash_reset_token, verify_password
 from services.user_service import (
     create_user,
+    get_user_auth_by_id,
     get_user_by_email,
     get_user_by_id,
     get_user_by_reset_token_hash,
     save_password_reset_token,
+    update_user_profile,
     update_user_password,
 )
 
@@ -42,7 +44,7 @@ def authenticate_user(email: str, password: str) -> dict:
     user = get_user_by_email(email)
     if user is None or not verify_password(password, user["password_hash"]):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password.")
-    return {"id": user["id"], "email": user["email"]}
+    return {"id": user["id"], "email": user["email"], "username": user["username"]}
 
 
 def load_user(user_id: int) -> dict:
@@ -50,6 +52,27 @@ def load_user(user_id: int) -> dict:
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found.")
     return user
+
+
+def update_account_profile(user_id: int, email: str, username: str) -> dict:
+    try:
+        return update_user_profile(user_id=user_id, email=email, username=username)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+def change_account_password(user_id: int, current_password: str, new_password: str) -> None:
+    user = get_user_auth_by_id(user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found.")
+    if not verify_password(current_password, user["password_hash"]):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Current password is incorrect.")
+    if current_password == new_password:
+        raise HTTPException(status_code=400, detail="New password must be different from the current password.")
+
+    validate_password_strength(new_password)
+    pw_hash = hash_password(new_password)
+    update_user_password(user_id=user_id, password_hash=pw_hash)
 
 
 def create_password_reset_token(email: str) -> str | None:

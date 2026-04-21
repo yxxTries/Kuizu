@@ -1,4 +1,5 @@
 import sqlite3
+import re
 from datetime import UTC, datetime
 from threading import Lock
 from typing import Any
@@ -6,6 +7,52 @@ from typing import Any
 from core.config import DB_PATH
 
 _DB_LOCK = Lock()
+USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_]{3,24}$")
+
+
+def _generate_unique_username(email: str, existing_usernames: set[str]) -> str:
+    local_part = email.split("@", 1)[0]
+    normalized = re.sub(r"[^A-Za-z0-9_]", "", local_part)
+    base = (normalized or "quizuser")[:24]
+    if len(base) < 3:
+        base = f"{base}user"[:24]
+
+    candidate = base
+    suffix = 1
+    while candidate.lower() in existing_usernames:
+        suffix_text = str(suffix)
+        trimmed = base[: max(3, 24 - len(suffix_text))]
+        candidate = f"{trimmed}{suffix_text}"
+        suffix += 1
+    return candidate
+
+
+def _ensure_username_column(conn: sqlite3.Connection) -> None:
+    conn.row_factory = sqlite3.Row
+    columns = {
+        row["name"]
+        for row in conn.execute("PRAGMA table_info(users)").fetchall()
+    }
+
+    if "username" not in columns:
+        conn.execute("ALTER TABLE users ADD COLUMN username TEXT")
+
+    existing_rows = conn.execute(
+        "SELECT username FROM users WHERE username IS NOT NULL AND TRIM(username) <> ''"
+    ).fetchall()
+    existing_usernames = {str(row["username"]).lower() for row in existing_rows}
+
+    rows_missing_username = conn.execute(
+        "SELECT id, email FROM users WHERE username IS NULL OR TRIM(username) = ''"
+    ).fetchall()
+    for row in rows_missing_username:
+        username = _generate_unique_username(str(row["email"]), existing_usernames)
+        conn.execute("UPDATE users SET username = ? WHERE id = ?", (username, row["id"]))
+        existing_usernames.add(username.lower())
+
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_unique ON users(username COLLATE NOCASE)"
+    )
 
 
 def init_user_db() -> None:
@@ -17,6 +64,7 @@ def init_user_db() -> None:
                 CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     email TEXT UNIQUE NOT NULL,
+                    username TEXT,
                     password_hash TEXT NOT NULL,
                     created_at TEXT NOT NULL,
                     reset_token_hash TEXT,
@@ -24,6 +72,7 @@ def init_user_db() -> None:
                 )
                 """
             )
+            _ensure_username_column(conn)
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS games (
@@ -53,13 +102,18 @@ def create_user(email: str, password_hash: str) -> dict[str, Any]:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         try:
+            existing_rows = conn.execute(
+                "SELECT username FROM users WHERE username IS NOT NULL AND TRIM(username) <> ''"
+            ).fetchall()
+            existing_usernames = {str(row["username"]).lower() for row in existing_rows}
+            username = _generate_unique_username(email, existing_usernames)
             cursor = conn.execute(
-                "INSERT INTO users (email, password_hash, created_at) VALUES (?, ?, ?)",
-                (email.lower(), password_hash, now),
+                "INSERT INTO users (email, username, password_hash, created_at) VALUES (?, ?, ?, ?)",
+                (email.lower(), username, password_hash, now),
             )
             conn.commit()
             user_id = cursor.lastrowid
-            row = conn.execute("SELECT id, email FROM users WHERE id = ?", (user_id,)).fetchone()
+            row = conn.execute("SELECT id, email, username FROM users WHERE id = ?", (user_id,)).fetchone()
             if row is None:
                 raise RuntimeError("User insert failed.")
             return dict(row)
@@ -73,7 +127,11 @@ def get_user_by_email(email: str) -> dict[str, Any] | None:
         conn.row_factory = sqlite3.Row
         try:
             row = conn.execute(
-                "SELECT id, email, password_hash, reset_token_hash, reset_token_expires_at FROM users WHERE email = ?",
+                """
+                SELECT id, email, username, password_hash, reset_token_hash, reset_token_expires_at
+                FROM users
+                WHERE email = ?
+                """,
                 (email.lower(),),
             ).fetchone()
             return dict(row) if row else None
@@ -86,7 +144,25 @@ def get_user_by_id(user_id: int) -> dict[str, Any] | None:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         try:
-            row = conn.execute("SELECT id, email FROM users WHERE id = ?", (user_id,)).fetchone()
+            row = conn.execute("SELECT id, email, username FROM users WHERE id = ?", (user_id,)).fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+
+def get_user_auth_by_id(user_id: int) -> dict[str, Any] | None:
+    with _DB_LOCK:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        try:
+            row = conn.execute(
+                """
+                SELECT id, email, username, password_hash, reset_token_hash, reset_token_expires_at
+                FROM users
+                WHERE id = ?
+                """,
+                (user_id,),
+            ).fetchone()
             return dict(row) if row else None
         finally:
             conn.close()
@@ -116,13 +192,55 @@ def get_user_by_reset_token_hash(token_hash: str) -> dict[str, Any] | None:
         try:
             row = conn.execute(
                 """
-                SELECT id, email, reset_token_hash, reset_token_expires_at
+                SELECT id, email, username, reset_token_hash, reset_token_expires_at
                 FROM users
                 WHERE reset_token_hash = ?
                 """,
                 (token_hash,),
             ).fetchone()
             return dict(row) if row else None
+        finally:
+            conn.close()
+
+
+def update_user_profile(user_id: int, email: str, username: str) -> dict[str, Any]:
+    normalized_email = email.lower().strip()
+    normalized_username = username.strip()
+    if not USERNAME_PATTERN.fullmatch(normalized_username):
+        raise ValueError("Username must be 3-24 characters and use only letters, numbers, or underscores.")
+
+    with _DB_LOCK:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        try:
+            email_conflict = conn.execute(
+                "SELECT id FROM users WHERE email = ? AND id != ?",
+                (normalized_email, user_id),
+            ).fetchone()
+            if email_conflict is not None:
+                raise ValueError("An account with this email already exists.")
+
+            username_conflict = conn.execute(
+                "SELECT id FROM users WHERE username = ? COLLATE NOCASE AND id != ?",
+                (normalized_username, user_id),
+            ).fetchone()
+            if username_conflict is not None:
+                raise ValueError("That username is already taken.")
+
+            conn.execute(
+                """
+                UPDATE users
+                SET email = ?, username = ?
+                WHERE id = ?
+                """,
+                (normalized_email, normalized_username, user_id),
+            )
+            conn.commit()
+
+            row = conn.execute("SELECT id, email, username FROM users WHERE id = ?", (user_id,)).fetchone()
+            if row is None:
+                raise RuntimeError("Failed to load updated user.")
+            return dict(row)
         finally:
             conn.close()
 

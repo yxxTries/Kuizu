@@ -103,6 +103,20 @@ export function getCurrentUser() {
   });
 }
 
+export function updateProfile(payload) {
+  return request("/auth/me", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function changePassword(payload) {
+  return request("/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function forgotPassword(payload) {
   return request("/auth/forgot-password", {
     method: "POST",

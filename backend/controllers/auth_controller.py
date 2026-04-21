@@ -18,10 +18,12 @@ from core.security import (
 from schemas.auth import ForgotPasswordResponse, UserResponse
 from services.auth_service import (
     authenticate_user,
+    change_account_password,
     create_password_reset_token,
     load_user,
     register_user,
     reset_password,
+    update_account_profile,
 )
 
 
@@ -99,6 +101,16 @@ def forgot_password(email: str) -> ForgotPasswordResponse:
     if token and ENABLE_INSECURE_RESET_TOKEN_RESPONSE:
         response.reset_token = token
     return response
+
+
+def update_profile(user_id: int, email: str, username: str) -> UserResponse:
+    user = update_account_profile(user_id=user_id, email=email, username=username)
+    return UserResponse.model_validate(user)
+
+
+def change_password(user_id: int, current_password: str, new_password: str) -> dict[str, str]:
+    change_account_password(user_id=user_id, current_password=current_password, new_password=new_password)
+    return {"message": "Password updated successfully."}
 
 
 def reset_password_controller(token: str, new_password: str) -> dict[str, str]:
