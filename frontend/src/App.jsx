@@ -30,6 +30,44 @@ const globalStyle = `
   @media (max-width: 520px) {
     .quiz-grid { grid-template-columns: 1fr !important; }
   }
+
+  .nav-buttons-container {
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: calc(100vw - 140px);
+    padding: 0 4px;
+    align-items: center;
+    z-index: 10;
+  }
+  .nav-button {
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+  @media (max-width: 768px) {
+    .nav-buttons-container {
+      top: 75px;
+      max-width: 100vw;
+      width: 100%;
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      overflow-x: auto;
+      padding: 0 20px 10px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .nav-buttons-container::-webkit-scrollbar {
+      display: none;
+    }
+    .nav-button {
+      font-size: 13px;
+      padding: 6px 12px !important;
+    }
+  }
 `;
 
 export default function App() {
@@ -425,24 +463,13 @@ function UploadPageContent({
   onLogout,
   navigate
 }) {
+  const [showAbout, setShowAbout] = useState(false);
+
   const navigationButtons = (
-    <div
-      style={{
-        position: "absolute",
-        top: 24,
-        left: "50%",
-        transform: "translateX(-50%)",
-        display: "flex",
-        gap: "10px",
-        flexWrap: "wrap",
-        justifyContent: "center",
-        maxWidth: "calc(100vw - 140px)",
-        padding: "0 4px",
-        alignItems: "center",
-      }}
-    >
+    <div className="nav-buttons-container">
       <button
         onClick={() => navigate("/discover")}
+        className="nav-button"
         style={{
           padding: "8px 16px",
           background: "rgba(15, 52, 96, 0.55)",
@@ -457,6 +484,7 @@ function UploadPageContent({
       </button>
       <button
         onClick={() => navigate("/games")}
+        className="nav-button"
         style={{
           padding: "8px 16px",
           background: "rgba(36, 73, 121, 0.65)",
@@ -471,6 +499,7 @@ function UploadPageContent({
       </button>
       <button
         onClick={() => navigate("/join")}
+        className="nav-button"
         style={{
           padding: "8px 16px",
           background: "#00D2D3",
@@ -483,6 +512,22 @@ function UploadPageContent({
         }}
       >
         Join a Game
+      </button>
+      <button
+        onMouseEnter={() => setShowAbout(true)}
+        onMouseLeave={() => setShowAbout(false)}
+        className="nav-button"
+        style={{
+          padding: "8px 16px",
+          background: "rgba(15, 52, 96, 0.55)",
+          color: "#E2E8F0",
+          border: "1px solid #2B5A8A",
+          borderRadius: 8,
+          cursor: "pointer",
+          fontWeight: 600,
+        }}
+      >
+        About Kuizu
       </button>
     </div>
   );
@@ -589,6 +634,53 @@ function UploadPageContent({
       {navigationButtons}
       {profileControls}
       <Upload onQuizReady={onQuizReady} onHostReady={onHostReady} user={user} onPlayPinned={onPlayPinned} />
+      {showAbout && <TypewriterOverlay />}
+    </div>
+  );
+}
+
+function TypewriterOverlay() {
+  const fullText = [
+    "About",
+    "=======================",
+    "The motivation behind Kuizu",
+    "",
+    "During my experience as an educator, I found myself spending countless hours crafting quizzes from lecture slides and reading materials, time that could be better spent actually teaching. I wanted a tool that could instantly transform my PDFs and presentations into engaging, high quality quizzes without cutting corners on academic rigor.",
+    "",
+    "Most importantly, I believe resources like this shouldn't stay locked. That's also why I built in a community hub where educators and students can share, discover, and remix each other's content.",
+    "",
+    "Kuizu is completely free and still very very early and I am also welcoming contributors. If you're interested in helping out, please reach out!",
+    "",
+    "Contact Details",
+    "---------------",
+    "Email:    yxx.tweaks@gmail.com",
+    "LinkedIn: https://www.linkedin.com/in/amilshahul/",
+    "GitHub:   https://github.com/yxxTries"
+  ].join("\n");
+  const [displayed, setDisplayed] = useState("");
+
+  useEffect(() => {
+    let i = 0;
+    const interval = setInterval(() => {
+      i += 1;
+      setDisplayed(fullText.substring(0, i));
+      if (i > fullText.length) clearInterval(interval);
+    }, 10);
+    return () => clearInterval(interval);
+  }, [fullText]);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.95)", zIndex: 9998, pointerEvents: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "clamp(16px, 5vmin, 40px)" }}>
+      <div style={{ whiteSpace: "pre-wrap", color: "#00D2D3", fontSize: "clamp(10px, 2.5vmin, 22px)", fontFamily: "monospace", textAlign: "left", width: "100%", maxWidth: "800px", lineHeight: 1.5 }}>
+        {displayed}
+        <span style={{ animation: "cursorBlink 1s step-end infinite" }}>_</span>
+      </div>
+      <style>{`
+        @keyframes cursorBlink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -483,10 +483,6 @@ export default function Upload({ onQuizReady, onHostReady, user, onPlayPinned })
 
           </div>
         </div>
-
-        <span style={{ position: "absolute", bottom: "16px", right: "24px", fontSize: "12px", color: "#B0BAC3", opacity: 0.5 }}>
-          made by Amil
-        </span>
       </main>
 
         <style>{`
