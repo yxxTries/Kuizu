@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useCallback, useEffect } from "react";
+﻿﻿import React, { useState, useRef, useCallback, useEffect } from "react";
 import { generateQuiz, getMyGames } from "./api.js";
 
 const ALLOWED = [".pdf", ".pptx"];
@@ -561,7 +561,7 @@ const styles = {
     gap: "40px",
     width: "100%",
     maxWidth: "1000px",
-    alignItems: "flex-start",
+    alignItems: "stretch",
     justifyContent: "space-between",
     flexWrap: "wrap",
   },
@@ -764,23 +764,26 @@ const styles = {
     background: "#16213E",
     border: "1px solid #2B5A8A",
     borderRadius: "12px",
-    padding: "12px 14px",
+    padding: "32px 24px",
     boxSizing: "border-box",
     display: "flex",
-    alignItems: "flex-start",
-    gap: "12px",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "20px",
+    flex: 1,
   },
   lockedFeaturesIcon: {
     flexShrink: 0,
-    minWidth: "42px",
-    height: "42px",
-    borderRadius: "10px",
+    width: "64px",
+    height: "64px",
+    borderRadius: "16px",
     background: "#122038",
     border: "1px solid #2B5A8A",
     display: "grid",
     placeItems: "center",
     color: "#8deeed",
-    fontSize: "11px",
+    fontSize: "14px",
     fontWeight: 800,
     textTransform: "uppercase",
     letterSpacing: "0.7px",
@@ -788,18 +791,19 @@ const styles = {
   lockedFeaturesContent: {
     display: "flex",
     flexDirection: "column",
-    gap: "3px",
-    paddingTop: "2px",
+    gap: "8px",
+    alignItems: "center",
+    textAlign: "center",
   },
   lockedFeaturesTitle: {
     color: "#F1F2F6",
-    fontSize: "13px",
+    fontSize: "16px",
     fontWeight: 700,
     lineHeight: 1.35,
   },
   lockedFeaturesText: {
     color: "#9bb1cb",
-    fontSize: "11px",
+    fontSize: "14px",
     lineHeight: 1.45,
   },
   timerHeader: {
@@ -1066,8 +1070,3 @@ const styles = {
     color: "#00D2D3",
   },
 };
-
-
-
-
-

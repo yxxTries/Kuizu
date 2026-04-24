@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Routes, Route, useNavigate, useSearchParams } from "react-router-dom";
+import { Routes, Route, useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Upload from "./Upload.jsx";
 import Preview from "./Preview.jsx";
@@ -321,7 +321,7 @@ export default function App() {
                 onRequireAuth={() => setIsAuthOpen(true)}
               />
             ) : (
-              (navigate("/"), null)
+              <Navigate to="/" replace />
             )
           }
         />
@@ -331,7 +331,7 @@ export default function App() {
             quiz ? (
               <Quiz quiz={quiz} onRestart={() => navigate("/")} autoReveal={autoReveal} />
             ) : (
-              (navigate("/"), null)
+              <Navigate to="/" replace />
             )
           }
         />
@@ -341,7 +341,7 @@ export default function App() {
             quiz ? (
               <Host quiz={quiz} onEnd={() => navigate("/")} autoReveal={autoReveal} />
             ) : (
-              (navigate("/"), null)
+              <Navigate to="/" replace />
             )
           }
         />
@@ -592,4 +592,3 @@ function UploadPageContent({
     </div>
   );
 }
-
