@@ -563,7 +563,6 @@ export default function CreateDashboard({
   };
 
   const handleHostMultiplayer = () => {
-    if (!loggedIn) return;
     const clean = validateAll();
     if (!clean) return;
     onHost({ ...(quizMeta || {}), questions: clean, timeControl: buildTimeControlPayload(timeControl) });
@@ -645,7 +644,7 @@ export default function CreateDashboard({
   };
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} className="dash-page">
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeUp {
@@ -718,6 +717,12 @@ export default function CreateDashboard({
           .dash-grid {
             grid-template-columns: 1fr !important;
             max-width: 720px !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .dash-page { padding-top: 124px !important; }
+          .dash-grid {
+            padding-bottom: 100px !important;
           }
         }
         @media (max-width: 600px) {
@@ -1107,7 +1112,16 @@ function ActionBar({ loggedIn, canPlay, hasContent, onPlay, onHost, onSave, onPo
       >
         ▶ Play
       </button>
-      {renderLockableBtn("host", "Host", styles.actionBtnCoral, onHost, false)}
+      <button
+        style={{
+          ...styles.actionBtnCoral,
+          ...(!canPlay ? styles.actionBtnDisabled : {}),
+        }}
+        onClick={onHost}
+        disabled={!canPlay}
+      >
+        Host
+      </button>
       {renderLockableBtn("save", "Save", styles.actionBtnGhost, onSave, saveLoading)}
       {renderLockableBtn("discover", "Post", styles.actionBtnGhost, onPostDiscover, discoverLoading)}
     </div>
