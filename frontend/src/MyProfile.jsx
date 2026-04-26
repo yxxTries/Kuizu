@@ -388,7 +388,7 @@ export default function MyProfile({ user, onBack, onRequireAuth, onUserUpdated, 
                 <h1 className="account-title">My Profile</h1>
               </div>
               <button type="button" onClick={onBack} className="account-back">
-                Back to Home
+                Back
               </button>
             </header>
 
@@ -420,7 +420,7 @@ export default function MyProfile({ user, onBack, onRequireAuth, onUserUpdated, 
               </p>
             </div>
             <button type="button" onClick={onBack} className="account-back">
-              Back to Home
+              Back
             </button>
           </header>
 

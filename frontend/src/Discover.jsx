@@ -128,7 +128,7 @@ export default function Discover({ onBack, onPlay, user, onRequireAuth }) {
             </p>
           </div>
           <button type="button" onClick={onBack} style={styles.backButton} className="discover-back-btn">
-            Back to Home
+            Back
           </button>
         </header>
 

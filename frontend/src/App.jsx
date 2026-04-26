@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Routes, Route, useNavigate, useSearchParams, useParams, Navigate } from "react-router-dom";
+import { Routes, Route, useNavigate, useSearchParams, useParams, Navigate, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Welcome from "./Welcome.jsx";
 import CreateDashboard from "./CreateDashboard.jsx";
@@ -63,13 +63,13 @@ const globalStyle = `
     font-size: 13px;
   }
   .nav-button:hover { background: ${COLORS.yellowSoft}; }
-  .nav-button-accent {
+  .nav-button-active {
     background: ${COLORS.sage};
     color: ${COLORS.ink};
     border-color: ${COLORS.sageDark};
     font-weight: 700;
   }
-  .nav-button-accent:hover { background: ${COLORS.sageDark}; color: ${COLORS.creamSoft}; }
+  .nav-button-active:hover { background: ${COLORS.sageDark}; color: ${COLORS.creamSoft}; }
 
   .nav-button-home {
     border-radius: 20px;
@@ -208,7 +208,7 @@ const globalStyle = `
       transition: opacity 0.15s;
     }
     .mobile-nav-btn:active { opacity: 0.75; }
-    .mobile-nav-btn-accent {
+    .mobile-nav-btn-active {
       background: ${COLORS.sage};
       color: ${COLORS.ink};
       border-color: ${COLORS.sageDark};
@@ -236,7 +236,6 @@ export default function App() {
   const [authBooting, setAuthBooting] = useState(true);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [serverStatus, setServerStatus] = useState("checking");
-  const [enteredCreate, setEnteredCreate] = useState(false);
   const profileMenuRef = useRef(null);
 
   const username = user?.username || user?.email?.split("@")[0] || "";
@@ -342,14 +341,13 @@ export default function App() {
     setUser(null);
     setAutoReveal(true);
     setIsProfileMenuOpen(false);
-    setEnteredCreate(false);
     navigate("/");
   };
 
   const handleAuthSuccess = async (nextUser) => {
     setUser(nextUser);
     setIsProfileMenuOpen(false);
-    navigate("/");
+    navigate("/home");
     try {
       const prefs = await getPreferences();
       setAutoReveal(prefs.auto_reveal);
@@ -407,6 +405,7 @@ export default function App() {
 
   const pageMeta = {
     "/": { title: "Kuizu — Turn slides into quizzes", description: "Upload a PDF or PPTX and instantly generate an AI-powered quiz. Play solo or host a live multiplayer game." },
+    "/home": { title: "Home — Kuizu", description: "Upload a PDF or PPTX and instantly generate an AI-powered quiz." },
     "/quiz": { title: "Playing Quiz — Kuizu", description: "Answer questions, track your streak, and see your score." },
     "/host": { title: "Host a Game — Kuizu", description: "Host a live multiplayer quiz. Share the PIN with friends and watch the leaderboard." },
     "/join": { title: "Join a Game — Kuizu", description: "Enter a game PIN and nickname to join a live Kuizu multiplayer session." },
@@ -442,12 +441,22 @@ export default function App() {
         <Route
           path="/"
           element={
+            <LandingRoute
+              user={user}
+              authBooting={authBooting}
+              onAuthOpen={() => setIsAuthOpen(true)}
+              onLogout={handleLogout}
+              navigate={navigate}
+            />
+          }
+        />
+        <Route
+          path="/home"
+          element={
             <HomeRoute
               user={user}
               quiz={quiz}
               setQuiz={setQuiz}
-              enteredCreate={enteredCreate}
-              setEnteredCreate={setEnteredCreate}
               authBooting={authBooting}
               isProfileMenuOpen={isProfileMenuOpen}
               profileMenuRef={profileMenuRef}
@@ -468,9 +477,9 @@ export default function App() {
           path="/quiz"
           element={
             quiz ? (
-              <Quiz quiz={quiz} onRestart={() => navigate("/")} autoReveal={autoReveal} />
+              <Quiz quiz={quiz} onRestart={() => navigate("/home")} autoReveal={autoReveal} />
             ) : (
-              <Navigate to="/" replace />
+              <Navigate to="/home" replace />
             )
           }
         />
@@ -478,15 +487,15 @@ export default function App() {
           path="/host"
           element={
             quiz ? (
-              <Host quiz={quiz} onEnd={() => navigate("/")} autoReveal={autoReveal} />
+              <Host quiz={quiz} onEnd={() => navigate("/home")} autoReveal={autoReveal} />
             ) : (
-              <Navigate to="/" replace />
+              <Navigate to="/home" replace />
             )
           }
         />
         <Route
           path="/join/:pin?"
-          element={<JoinRoute onExit={() => navigate("/")} />}
+          element={<JoinRoute onExit={() => navigate("/home")} />}
         />
         <Route
           path="/discover"
@@ -504,11 +513,11 @@ export default function App() {
               navigate={navigate}
             >
               <Discover
-                onBack={() => navigate("/")}
+                onBack={() => navigate("/home")}
                 onPlay={(quizData) => {
                   setQuiz(quizData);
                   setIntent("solo");
-                  navigate("/");
+                  navigate("/home");
                 }}
                 user={user}
                 onRequireAuth={() => setIsAuthOpen(true)}
@@ -532,18 +541,18 @@ export default function App() {
               navigate={navigate}
             >
               <MyGames
-                onBack={() => navigate("/")}
+                onBack={() => navigate("/home")}
                 username={username}
                 onPlay={(quizData) => {
                   setQuiz(quizData);
                   setIntent("solo");
-                  navigate("/");
+                  navigate("/home");
                 }}
                 onRequireAuth={() => setIsAuthOpen(true)}
                 onEdit={(game) => {
                   setQuiz(game.quiz);
                   setIntent("solo");
-                  navigate("/");
+                  navigate("/home");
                 }}
               />
             </MainLayout>
@@ -554,7 +563,7 @@ export default function App() {
           element={
             <MyProfile
               user={user}
-              onBack={() => navigate("/")}
+              onBack={() => navigate("/home")}
               onRequireAuth={() => setIsAuthOpen(true)}
               onUserUpdated={setUser}
               autoReveal={autoReveal}
@@ -563,7 +572,7 @@ export default function App() {
           }
         />
         {/* Legacy redirect */}
-        <Route path="/preview" element={<Navigate to="/" replace />} />
+        <Route path="/preview" element={<Navigate to="/home" replace />} />
       </Routes>
 
       {isAuthOpen && (
@@ -577,41 +586,39 @@ export default function App() {
 }
 
 // ──────────────────────────────────────────────
-// HomeRoute
-// Logged-out + no chosen path → Welcome (3 boxes)
-// Logged-in OR chose "Create" → CreateDashboard
+// LandingRoute & HomeRoute
 // ──────────────────────────────────────────────
 
+function LoadingScreen() {
+  return (
+    <div style={{
+      minHeight: "100vh", background: COLORS.cream, color: COLORS.ink,
+      display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONTS.body,
+    }}>
+      Loading…
+    </div>
+  );
+}
+
+function LandingRoute({ user, authBooting, onAuthOpen, onLogout, navigate }) {
+  if (authBooting) return <LoadingScreen />;
+  return (
+    <Welcome
+      user={user}
+      onSignIn={onAuthOpen}
+      onSignOut={onLogout}
+      onCreate={() => navigate("/home")}
+      onJoin={() => navigate("/join")}
+    />
+  );
+}
+
 function HomeRoute({
-  user, quiz, setQuiz, enteredCreate, setEnteredCreate,
-  authBooting, isProfileMenuOpen, profileMenuRef,
+  user, quiz, setQuiz, authBooting, isProfileMenuOpen, profileMenuRef,
   username, profileInitial, onProfileMenuToggle, onAuthOpen, onLogout,
   onPlay, onHost, onSaveGame, onPostDiscover, navigate,
 }) {
-  const showDashboard = enteredCreate;
-
-  if (!showDashboard && !authBooting) {
-    return (
-      <Welcome
-        user={user}
-        onSignIn={onAuthOpen}
-        onSignOut={onLogout}
-        onCreate={() => setEnteredCreate(true)}
-        onJoin={() => navigate("/join")}
-      />
-    );
-  }
-
-  if (authBooting) {
-    return (
-      <div style={{
-        minHeight: "100vh", background: COLORS.cream, color: COLORS.ink,
-        display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONTS.body,
-      }}>
-        Loading…
-      </div>
-    );
-  }
+  if (authBooting) return <LoadingScreen />;
 
   return (
     <MainLayout
@@ -649,6 +656,8 @@ function MainLayout({
 }) {
   const [showAbout, setShowAbout] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const location = useLocation();
+  const path = location.pathname;
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -663,13 +672,13 @@ function MainLayout({
         Kuizu
       </div>
       <div className="nav-buttons-container">
-        <button onClick={() => navigate("/discover")} className="nav-button">Discover</button>
-        <button onClick={() => navigate("/games")} className="nav-button">My Games</button>
-        <button onClick={() => navigate("/")} className="nav-button nav-button-home">Home</button>
-        <button onClick={() => navigate("/join")} className="nav-button nav-button-accent">Join a Game</button>
+        <button onClick={() => navigate("/discover")} className={`nav-button ${path === "/discover" ? "nav-button-active" : ""}`}>Discover</button>
+        <button onClick={() => navigate("/games")} className={`nav-button ${path === "/games" ? "nav-button-active" : ""}`}>My Games</button>
+        <button onClick={() => navigate("/home")} className={`nav-button nav-button-home ${path === "/home" || path === "/" ? "nav-button-active" : ""}`}>Home</button>
+        <button onClick={() => navigate("/join")} className={`nav-button ${path.startsWith("/join") ? "nav-button-active" : ""}`}>Join a Game</button>
         <button
           onClick={(e) => { e.stopPropagation(); setShowAbout((v) => !v); }}
-          className="nav-button"
+          className={`nav-button ${showAbout ? "nav-button-active" : ""}`}
         >
           About
         </button>
@@ -691,11 +700,11 @@ function MainLayout({
         )}
       </div>
       <div className="mobile-nav-grid">
-        <button className="mobile-nav-btn" onClick={() => navigate("/discover")}>Discover</button>
-        <button className="mobile-nav-btn" onClick={() => navigate("/games")}>My Games</button>
-        <button className="mobile-nav-btn mobile-nav-btn-home" onClick={() => navigate("/")}>Home</button>
-        <button className="mobile-nav-btn mobile-nav-btn-accent" onClick={() => navigate("/join")}>Join a Game</button>
-        <button className="mobile-nav-btn" onClick={(e) => { e.stopPropagation(); setShowAbout((v) => !v); }}>About</button>
+        <button className={`mobile-nav-btn ${path === "/discover" ? "mobile-nav-btn-active" : ""}`} onClick={() => navigate("/discover")}>Discover</button>
+        <button className={`mobile-nav-btn ${path === "/games" ? "mobile-nav-btn-active" : ""}`} onClick={() => navigate("/games")}>My Games</button>
+        <button className={`mobile-nav-btn mobile-nav-btn-home ${path === "/home" || path === "/" ? "mobile-nav-btn-active" : ""}`} onClick={() => navigate("/home")}>Home</button>
+        <button className={`mobile-nav-btn ${path.startsWith("/join") ? "mobile-nav-btn-active" : ""}`} onClick={() => navigate("/join")}>Join a Game</button>
+        <button className={`mobile-nav-btn ${showAbout ? "mobile-nav-btn-active" : ""}`} onClick={(e) => { e.stopPropagation(); setShowAbout((v) => !v); }}>About</button>
       </div>
     </div>
   );

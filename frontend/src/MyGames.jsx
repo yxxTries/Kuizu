@@ -281,7 +281,7 @@ export default function MyGames({ onBack, username, onPlay, onRequireAuth }) {
           </div>
 
           <button type="button" onClick={onBack} style={styles.backBtn} className="mygames-back-btn">
-            Back to Home
+            Back
           </button>
         </header>
 

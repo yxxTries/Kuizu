@@ -62,9 +62,10 @@ function normalizeTimeControl(value) {
   if (value == null) return { enabled: true, preset: "quick", secondsPerQuestion: 10 };
   const seconds = Number(value?.secondsPerQuestion);
   const matchingPreset = TIMER_PRESETS.find((p) => p.seconds === seconds);
+  const preset = value?.preset === "custom" ? "custom" : (matchingPreset ? matchingPreset.id : "custom");
   return {
     enabled: Boolean(value?.enabled && Number.isFinite(seconds) && seconds >= 5 && seconds <= 120),
-    preset: matchingPreset ? matchingPreset.id : "quick",
+    preset: preset,
     secondsPerQuestion: Number.isFinite(seconds) ? Math.max(5, Math.min(120, Math.round(seconds))) : 10,
   };
 }
@@ -849,7 +850,7 @@ export default function CreateDashboard({
 
                 <div style={styles.settingGroup}>
                   <span style={styles.label}>Timer</span>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     <button
                       type="button"
                       style={{ ...styles.toolBtn, ...(!timeControl.enabled ? styles.toolBtnActive : {}) }}
@@ -860,6 +861,31 @@ export default function CreateDashboard({
                         {preset.label} · {preset.seconds}s
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      style={{ ...styles.toolBtn, ...(timeControl.enabled && timeControl.preset === "custom" ? styles.toolBtnActive : {}) }}
+                      onClick={() => setTimeControl((p) => ({ ...p, enabled: true, preset: "custom" }))}
+                    >
+                      Custom
+                    </button>
+                    {timeControl.enabled && timeControl.preset === "custom" && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <input
+                          type="number"
+                          min={5}
+                          max={120}
+                          value={timeControl.secondsPerQuestion}
+                          onChange={(e) => setTimeControl(p => ({ ...p, secondsPerQuestion: Number(e.target.value) }))}
+                          onBlur={(e) => setTimeControl(p => ({ ...p, secondsPerQuestion: Math.max(5, Math.min(120, Number(e.target.value) || 5)) }))}
+                          disabled={loading}
+                          style={{
+                            width: 50, padding: "4px 8px", borderRadius: 8, border: `1px solid ${COLORS.border}`,
+                            background: COLORS.creamSoft, color: COLORS.ink, fontSize: 12, outline: "none", fontFamily: "inherit"
+                          }}
+                        />
+                        <span style={{ fontSize: 12, color: COLORS.inkSoft, fontWeight: 600 }}>s</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -915,6 +941,27 @@ export default function CreateDashboard({
                     {preset.label} · {preset.seconds}s
                   </button>
                 ))}
+                <button
+                  type="button"
+                  style={{
+                    ...styles.toolBtn,
+                    ...(timeControl.enabled && timeControl.preset === "custom" ? styles.toolBtnActive : {}),
+                  }}
+                  onClick={() => setTimeControl((p) => ({ ...p, enabled: true, preset: "custom" }))}
+                >Custom</button>
+                {timeControl.enabled && timeControl.preset === "custom" && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <input
+                      type="number"
+                      min={5} max={120} value={timeControl.secondsPerQuestion}
+                      onChange={(e) => setTimeControl(p => ({ ...p, secondsPerQuestion: Number(e.target.value) }))}
+                      onBlur={(e) => setTimeControl(p => ({ ...p, secondsPerQuestion: Math.max(5, Math.min(120, Number(e.target.value) || 5)) }))}
+                      disabled={loading}
+                      style={{ width: 50, padding: "4px 8px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: COLORS.creamSoft, color: COLORS.ink, fontSize: 12, outline: "none", fontFamily: "inherit" }}
+                    />
+                    <span style={{ fontSize: 12, color: COLORS.inkSoft, fontWeight: 600 }}>s</span>
+                  </div>
+                )}
               </div>
 
               <div className="divider" />

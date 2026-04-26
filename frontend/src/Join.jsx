@@ -305,7 +305,7 @@ export default function Join({ onExit, initialPin = "" }) {
                onMouseOver={(e) => { e.currentTarget.style.background = "rgba(244, 236, 210, 0.6)"; e.currentTarget.style.color = "#2A3340"; }}
                onMouseOut={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#5C6877"; }}
             >
-               Back to Home
+               Back
             </button>
             <style>{`
               @keyframes shake {
