@@ -1,6 +1,5 @@
 import random
 import string
-import json
 from fastapi import WebSocket
 
 class ConnectionManager:
@@ -9,10 +8,11 @@ class ConnectionManager:
         self.rooms = {}
 
     def generate_pin(self) -> str:
-        while True:
+        for _ in range(1000):
             pin = ''.join(random.choices(string.digits, k=4))
             if pin not in self.rooms:
                 return pin
+        raise RuntimeError("No available PINs — server is at capacity")
 
     async def join_room(self, pin: str, player_name: str, player_ws: WebSocket) -> bool:
         if pin not in self.rooms:
@@ -26,22 +26,46 @@ class ConnectionManager:
                 "type": "player_joined",
                 "name": player_name
             })
-        except Exception:
-            pass # Host might have disconnected
+        except Exception as e:
+            print(f"Warning: could not notify host of player join: {e}")
             
         return True
 
     def get_room(self, pin: str):
         return self.rooms.get(pin)
 
+    def ensure_room_state(self, pin: str):
+        room = self.get_room(pin)
+        if not room:
+            return None
+        room.setdefault("scores", {})
+        room.setdefault("streaks", {})
+        room.setdefault("answer_ranks", {})
+        return room
+
     async def broadcast_to_players(self, pin: str, message: dict):
         if pin in self.rooms:
             for player_name, player_ws in list(self.rooms[pin]["players"].items()):
                 try:
                     await player_ws.send_json(message)
-                except Exception:
-                    # Remove player if connection is dead
+                except Exception as e:
+                    print(f"Warning: dropping dead player connection ({player_name}): {e}")
                     await self.remove_player(pin, player_name)
+
+    async def sync_leaderboard(self, pin: str):
+        room = self.get_room(pin)
+        if not room:
+            return
+        payload = {
+            "type": "leaderboard",
+            "scores": room.get("scores", {}),
+            "streaks": room.get("streaks", {}),
+        }
+        await self.broadcast_to_players(pin, payload)
+        try:
+            await room["host"].send_json(payload)
+        except Exception as e:
+            print(f"Warning: could not sync leaderboard to host: {e}")
 
     async def remove_player(self, pin: str, player_name: str):
         if pin in self.rooms:
@@ -53,8 +77,8 @@ class ConnectionManager:
                         "type": "player_left",
                         "name": player_name
                     })
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"Warning: could not notify host of player leave: {e}")
 
     async def remove_host(self, pin: str):
         if pin in self.rooms:
@@ -65,8 +89,8 @@ class ConnectionManager:
             for player_ws in self.rooms[pin]["players"].values():
                 try:
                     await player_ws.close()
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"Warning: could not close player WebSocket: {e}")
             
             del self.rooms[pin]
 

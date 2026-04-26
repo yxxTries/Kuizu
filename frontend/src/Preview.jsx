@@ -222,7 +222,7 @@ const cardStyles = {
   card: {
     position: "relative",
     background: "#16213E",
-    border: "1px solid #1e1e2e",
+    border: "1px solid #2B5A8A",
     borderRadius: "16px",
     padding: "22px 24px",
     marginBottom: "12px",
@@ -263,6 +263,9 @@ const cardStyles = {
     fontWeight: 700,
     fontSize: "12px",
     color: "#00D2D3",
+    background: "rgba(0, 210, 211, 0.15)",
+    padding: "4px 10px",
+    borderRadius: "12px",
     letterSpacing: "0.5px",
   },
   actions: {
@@ -270,16 +273,19 @@ const cardStyles = {
     gap: "6px",
   },
   iconBtn: {
-    background: "none",
-    border: "none",
+    background: "rgba(15, 52, 96, 0.55)",
+    border: "1px solid #2B5A8A",
+    color: "#E2E8F0",
     cursor: "pointer",
-    fontSize: "16px",
-    padding: "4px 6px",
-    borderRadius: "6px",
+    fontSize: "14px",
+    padding: "6px 10px",
+    borderRadius: "8px",
     opacity: 0.9,
     transition: "opacity 0.15s, background 0.15s",
   },
   deleteBtn: {
+    background: "rgba(255, 107, 107, 0.1)",
+    border: "1px solid rgba(255, 107, 107, 0.3)",
     opacity: 1,
     color: "#FF6B6B",
   },
@@ -311,9 +317,9 @@ const cardStyles = {
     color: "#5dd87a",
   },
   choiceNeutral: {
-    background: "#18181f",
-    border: "1px solid #1e1e2e",
-    color: "#9090a8",
+    background: "#1A2235",
+    border: "1px solid #2B5A8A",
+    color: "#B0BAC3",
   },
   choiceDot: {
     fontWeight: 700,
@@ -438,15 +444,409 @@ const cardStyles = {
 };
 
 // ─────────────────────────────────────────────
+// Timer settings helpers (mirrors Upload.jsx)
+// ─────────────────────────────────────────────
+
+const TIMER_PRESETS = [
+  { id: "quick",    label: "Quick",    seconds: 10 },
+  { id: "standard", label: "Standard", seconds: 20 },
+  { id: "thinker",  label: "Thinker",  seconds: 30 },
+  { id: "extended", label: "Extended", seconds: 45 },
+];
+
+function normalizeTimeControl(value) {
+  const seconds = Number(value?.secondsPerQuestion);
+  const matchingPreset = TIMER_PRESETS.find((p) => p.seconds === seconds);
+  return {
+    enabled: Boolean(value?.enabled && Number.isFinite(seconds) && seconds >= 5 && seconds <= 120),
+    preset: matchingPreset ? matchingPreset.id : "standard",
+    secondsPerQuestion: Number.isFinite(seconds) ? Math.max(5, Math.min(120, Math.round(seconds))) : 20,
+  };
+}
+
+function buildTimeControlPayload(value) {
+  if (!value?.enabled) return { enabled: false };
+  return {
+    enabled: true,
+    mode: "per_question",
+    secondsPerQuestion: Math.max(5, Math.min(120, Math.round(Number(value.secondsPerQuestion) || 20))),
+  };
+}
+
+function formatTimerSummary(value) {
+  if (!value?.enabled) return "Off";
+  return `${Math.round(value.secondsPerQuestion)}s / question`;
+}
+
+// ─────────────────────────────────────────────
+// SettingsPanel (right sidebar)
+// ─────────────────────────────────────────────
+
+function SettingsPanel({ timeControl, onTimeControlChange, onSaveGame, saveLoading, saveMessage, onPostDiscover, discoverLoading, discoverMessage, loggedIn, onRequireAuth }) {
+  return (
+    <aside style={settingsStyles.panel} className="preview-sidebar">
+      <p style={settingsStyles.heading}>Settings</p>
+
+      {/* Save Game */}
+      <div style={settingsStyles.row}>
+        <div style={settingsStyles.rowTop}>
+          <span style={settingsStyles.rowLabel}>Save Game</span>
+        </div>
+        {loggedIn ? (
+          <>
+            <button
+              type="button"
+              style={settingsStyles.actionBtn}
+              disabled={saveLoading}
+              onClick={onSaveGame}
+            >
+              {saveLoading ? "Saving…" : "Save to My Games"}
+            </button>
+            {saveMessage && (
+              <p style={{ ...settingsStyles.feedback, color: saveMessage.startsWith("Could") ? "#ff7070" : "#00D2D3" }}>
+                {saveMessage}
+              </p>
+            )}
+          </>
+        ) : (
+          <button type="button" style={settingsStyles.signInBtn} onClick={onRequireAuth}>
+            Sign in to save
+          </button>
+        )}
+      </div>
+
+      {/* Post to Discover */}
+      <div style={settingsStyles.row}>
+        <div style={settingsStyles.rowTop}>
+          <span style={settingsStyles.rowLabel}>Post to Discover</span>
+        </div>
+        <p style={settingsStyles.rowHint}>Share this quiz publicly with the community.</p>
+        {loggedIn ? (
+          <>
+            <button
+              type="button"
+              style={{ ...settingsStyles.actionBtn, ...settingsStyles.discoverBtn }}
+              disabled={discoverLoading}
+              onClick={onPostDiscover}
+            >
+              {discoverLoading ? "Posting…" : "Publish"}
+            </button>
+            {discoverMessage && (
+              <p style={{ ...settingsStyles.feedback, color: discoverMessage.startsWith("Could") ? "#ff7070" : "#00D2D3" }}>
+                {discoverMessage}
+              </p>
+            )}
+          </>
+        ) : (
+          <button type="button" style={settingsStyles.signInBtn} onClick={onRequireAuth}>
+            Sign in to publish
+          </button>
+        )}
+      </div>
+
+      {/* Timer row */}
+      <div style={settingsStyles.row}>
+        <div style={settingsStyles.rowTop}>
+          <span style={settingsStyles.rowLabel}>Timer</span>
+          <span style={settingsStyles.rowValue}>{formatTimerSummary(timeControl)}</span>
+        </div>
+
+        {loggedIn ? (
+          <>
+            <div style={settingsStyles.modeRow}>
+              <button
+                type="button"
+                style={{ ...settingsStyles.modeBtn, ...(!timeControl.enabled ? settingsStyles.modeBtnActive : {}) }}
+                onClick={() => onTimeControlChange((prev) => ({ ...prev, enabled: false }))}
+              >
+                Off
+              </button>
+              <button
+                type="button"
+                style={{ ...settingsStyles.modeBtn, ...(timeControl.enabled ? settingsStyles.modeBtnActive : {}) }}
+                onClick={() =>
+                  onTimeControlChange((prev) => ({
+                    ...prev,
+                    enabled: true,
+                    preset: prev.preset || "standard",
+                    secondsPerQuestion: prev.secondsPerQuestion || 20,
+                  }))
+                }
+              >
+                On
+              </button>
+            </div>
+
+            {timeControl.enabled && (
+              <>
+                <div style={settingsStyles.presetGrid}>
+                  {TIMER_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      style={{
+                        ...settingsStyles.presetBtn,
+                        ...(timeControl.preset === preset.id ? settingsStyles.presetBtnActive : {}),
+                      }}
+                      onClick={() =>
+                        onTimeControlChange({ enabled: true, preset: preset.id, secondsPerQuestion: preset.seconds })
+                      }
+                    >
+                      <span style={settingsStyles.presetName}>{preset.label}</span>
+                      <span style={settingsStyles.presetSec}>{preset.seconds}s</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div style={settingsStyles.customRow}>
+                  <button
+                    type="button"
+                    style={{
+                      ...settingsStyles.customBtn,
+                      ...(timeControl.preset === "custom" ? settingsStyles.customBtnActive : {}),
+                    }}
+                    onClick={() => onTimeControlChange((prev) => ({ ...prev, enabled: true, preset: "custom" }))}
+                  >
+                    Custom
+                  </button>
+                  <input
+                    type="number"
+                    min={5}
+                    max={120}
+                    value={timeControl.secondsPerQuestion}
+                    disabled={timeControl.preset !== "custom"}
+                    onChange={(e) =>
+                      onTimeControlChange({
+                        enabled: true,
+                        preset: "custom",
+                        secondsPerQuestion: Math.max(5, Math.min(120, Number(e.target.value) || 5)),
+                      })
+                    }
+                    style={{
+                      ...settingsStyles.customInput,
+                      ...(timeControl.preset !== "custom" ? settingsStyles.customInputDisabled : {}),
+                    }}
+                  />
+                  <span style={settingsStyles.customSuffix}>s</span>
+                </div>
+              </>
+            )}
+          </>
+        ) : (
+          <button type="button" style={settingsStyles.signInBtn} onClick={onRequireAuth}>
+            Sign in to use timer
+          </button>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+const settingsStyles = {
+  panel: {
+    width: "100%",
+    maxWidth: "400px",
+    flexShrink: 0,
+    paddingTop: "32px",
+    paddingLeft: "20px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "16px",
+    position: "sticky",
+    top: "61px",
+    alignSelf: "flex-start",
+  },
+  heading: {
+    margin: 0,
+    fontFamily: "'Syne', sans-serif",
+    fontWeight: 700,
+    fontSize: "11px",
+    color: "#00D2D3",
+    textTransform: "uppercase",
+    letterSpacing: "0.8px",
+  },
+  row: {
+    background: "#16213E",
+    border: "1px solid #2B5A8A",
+    borderLeft: "4px solid #00D2D3",
+    borderRadius: "14px",
+    padding: "14px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+  },
+  rowTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  rowLabel: {
+    fontSize: "12px",
+    fontWeight: 600,
+    color: "#B0BAC3",
+  },
+  rowValue: {
+    fontSize: "11px",
+    color: "#00D2D3",
+    fontWeight: 600,
+  },
+  modeRow: {
+    display: "flex",
+    gap: "6px",
+  },
+  modeBtn: {
+    flex: 1,
+    padding: "6px 0",
+    borderRadius: "7px",
+    border: "1px solid #0F3460",
+    background: "#1A1A2E",
+    color: "#B0BAC3",
+    fontSize: "12px",
+    fontWeight: 600,
+    cursor: "pointer",
+    transition: "all 0.15s",
+    fontFamily: "'DM Sans', sans-serif",
+  },
+  modeBtnActive: {
+    background: "#00D2D3",
+    color: "#16213E",
+    borderColor: "#00D2D3",
+  },
+  presetGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "5px",
+  },
+  presetBtn: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    padding: "8px 4px",
+    borderRadius: "8px",
+    border: "1px solid #0F3460",
+    background: "#1A1A2E",
+    color: "#B0BAC3",
+    cursor: "pointer",
+    transition: "all 0.15s",
+    fontFamily: "'DM Sans', sans-serif",
+    gap: "1px",
+  },
+  presetBtnActive: {
+    background: "rgba(0,210,211,0.1)",
+    borderColor: "#00D2D3",
+    color: "#00D2D3",
+  },
+  presetName: {
+    fontSize: "11px",
+    fontWeight: 600,
+  },
+  presetSec: {
+    fontSize: "10px",
+    opacity: 0.65,
+  },
+  customRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+  },
+  customBtn: {
+    flex: "0 0 auto",
+    padding: "6px 8px",
+    borderRadius: "7px",
+    border: "1px solid #0F3460",
+    background: "#1A1A2E",
+    color: "#B0BAC3",
+    fontSize: "11px",
+    fontWeight: 600,
+    cursor: "pointer",
+    transition: "all 0.15s",
+    fontFamily: "'DM Sans', sans-serif",
+  },
+  customBtnActive: {
+    background: "rgba(0,210,211,0.1)",
+    borderColor: "#00D2D3",
+    color: "#00D2D3",
+  },
+  customInput: {
+    width: "60px",
+    background: "#1A1A2E",
+    border: "1px solid #0F3460",
+    borderRadius: "7px",
+    color: "#F1F2F6",
+    fontSize: "12px",
+    padding: "6px 6px",
+    outline: "none",
+    fontFamily: "'DM Sans', sans-serif",
+    minWidth: 0,
+  },
+  customInputDisabled: {
+    opacity: 0.35,
+    cursor: "not-allowed",
+  },
+  customSuffix: {
+    fontSize: "11px",
+    color: "#B0BAC3",
+  },
+  actionBtn: {
+    width: "100%",
+    padding: "8px 0",
+    borderRadius: "8px",
+    border: "1px solid #0F3460",
+    background: "#1A1A2E",
+    color: "#B0BAC3",
+    fontSize: "12px",
+    fontWeight: 600,
+    cursor: "pointer",
+    transition: "all 0.15s",
+    fontFamily: "'DM Sans', sans-serif",
+  },
+  discoverBtn: {
+    borderColor: "rgba(0,210,211,0.3)",
+    color: "#00D2D3",
+    background: "rgba(0,210,211,0.06)",
+  },
+  rowHint: {
+    margin: 0,
+    fontSize: "11px",
+    color: "#6a6a8a",
+    lineHeight: 1.4,
+  },
+  feedback: {
+    margin: 0,
+    fontSize: "11px",
+    fontWeight: 600,
+  },
+  signInBtn: {
+    width: "100%",
+    padding: "8px 0",
+    borderRadius: "8px",
+    border: "1px dashed #2a2a4a",
+    background: "transparent",
+    color: "#6a6a9a",
+    fontSize: "12px",
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "'DM Sans', sans-serif",
+    transition: "all 0.15s",
+  },
+};
+
+// ─────────────────────────────────────────────
 // Preview (main component)
 // ─────────────────────────────────────────────
 
-export default function Preview({ quiz, onStart, onBack, intent = "solo" }) {
-  const [questions, setQuestions]       = useState(() => cloneQuestions(quiz.questions));
-  const [showAnswers, setShowAnswers]   = useState(false);
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [globalErrors, setGlobalErrors] = useState({}); // { _id: { field: msg } }
-  const [errorBanner, setErrorBanner]   = useState("");
+export default function Preview({ quiz, onStart, onBack, intent = "solo", onSaveGame, onPostDiscover, user, onRequireAuth }) {
+  const [questions, setQuestions]         = useState(() => cloneQuestions(quiz.questions));
+  const [showAnswers, setShowAnswers]     = useState(false);
+  const [editingIndex, setEditingIndex]   = useState(null);
+  const [globalErrors, setGlobalErrors]   = useState({});
+  const [errorBanner, setErrorBanner]     = useState("");
+  const [saveLoading, setSaveLoading]     = useState(false);
+  const [saveMessage, setSaveMessage]     = useState("");
+  const [discoverLoading, setDiscoverLoading] = useState(false);
+  const [discoverMessage, setDiscoverMessage] = useState("");
+  const [timeControl, setTimeControl]     = useState(() => normalizeTimeControl(quiz?.timeControl));
+  const discoverMeta = quiz?.discoverMeta || null;
 
   // Drag state
   const dragIndex = useRef(null);
@@ -607,20 +1007,106 @@ export default function Preview({ quiz, onStart, onBack, intent = "solo" }) {
       return;
     }
 
-    // Strip internal _id before passing to quiz
+    // Strip internal _id before passing to quiz, preserve all other quiz fields (e.g. timeControl)
     const clean = questions.map(({ _id, ...rest }) => rest);
-    onStart({ questions: clean });
+    onStart({ ...quiz, questions: clean, timeControl: buildTimeControlPayload(timeControl) });
+  };
+
+  const handleSaveGame = async () => {
+    if (!onSaveGame) {
+      return;
+    }
+
+    if (questions.length === 0) {
+      setErrorBanner("Add at least one question before saving.");
+      return;
+    }
+
+    const newErrors = {};
+    questions.forEach((q) => {
+      const errs = validateCard(q);
+      if (hasErrors(errs)) {
+        newErrors[q._id] = errs;
+      }
+    });
+    if (Object.keys(newErrors).length > 0) {
+      setGlobalErrors(newErrors);
+      setErrorBanner("Fix question issues before saving.");
+      return;
+    }
+
+    const clean = questions.map(({ _id, ...rest }) => rest);
+    const fallbackTitle = clean[0]?.question?.slice(0, 60) || "Untitled Quiz";
+    const title = discoverMeta?.title || fallbackTitle;
+    const category = discoverMeta?.category || "General";
+
+    setSaveLoading(true);
+    setSaveMessage("");
+    try {
+      await onSaveGame({
+        title,
+        category,
+        quiz: { ...quiz, questions: clean, timeControl: buildTimeControlPayload(timeControl), discoverMeta: discoverMeta || undefined },
+      });
+      setSaveMessage("Saved to My Games.");
+    } catch (err) {
+      setSaveMessage(err?.message || "Could not save game.");
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handlePostToDiscover = async () => {
+    if (!onPostDiscover) return;
+
+    if (questions.length === 0) {
+      setErrorBanner("Add at least one question before posting.");
+      return;
+    }
+
+    const newErrors = {};
+    questions.forEach((q) => {
+      const errs = validateCard(q);
+      if (hasErrors(errs)) newErrors[q._id] = errs;
+    });
+    if (Object.keys(newErrors).length > 0) {
+      setGlobalErrors(newErrors);
+      setErrorBanner("Fix question issues before posting.");
+      return;
+    }
+
+    const clean = questions.map(({ _id, ...rest }) => rest);
+    const fallbackTitle = clean[0]?.question?.slice(0, 60) || "Untitled Quiz";
+    const title = discoverMeta?.title || fallbackTitle;
+    const category = discoverMeta?.category || "General";
+
+    setDiscoverLoading(true);
+    setDiscoverMessage("");
+    try {
+      await onPostDiscover({
+        title,
+        category,
+        quiz: { ...quiz, questions: clean, timeControl: buildTimeControlPayload(timeControl), discoverMeta: discoverMeta || undefined },
+      });
+      setDiscoverMessage("Posted to Discover!");
+    } catch (err) {
+      setDiscoverMessage(err?.message || "Could not post to Discover.");
+    } finally {
+      setDiscoverLoading(false);
+    }
   };
 
   return (
     <div style={styles.page}>
       {/* Header */}
-      <header style={styles.header}>
+      <header style={styles.header} className="preview-header">
         <span style={styles.logo}>Kuizu</span>
-        <span style={styles.title}>Review Questions</span>
-        <button style={styles.startBtn} onClick={handleStart}>
-          {intent === "host" ? "Create Lobby \u2192" : "Start Quiz \u2192"}
-        </button>
+        <span style={styles.title}>Review</span>
+        <div style={styles.headerActions}>
+          <button style={styles.startBtn} onClick={handleStart}>
+            {intent === "host" ? "Create Lobby \u2192" : "Start Quiz \u2192"}
+          </button>
+        </div>
       </header>
 
       {/* Error banner */}
@@ -630,7 +1116,8 @@ export default function Preview({ quiz, onStart, onBack, intent = "solo" }) {
         </div>
       )}
 
-      <main style={styles.main}>
+      <div style={styles.body} className="preview-body">
+      <main style={styles.main} className="preview-main">
         {/* Controls row */}
         <div style={styles.controlsRow}>
           <span style={styles.countLabel}>
@@ -656,6 +1143,33 @@ export default function Preview({ quiz, onStart, onBack, intent = "solo" }) {
             </div>
           </label>
         </div>
+
+        {discoverMeta && (
+          <section style={styles.discoverSummary}>
+            <div style={styles.discoverHeaderRow}>
+              <div style={styles.authorWrap}>
+                <div style={styles.authorIcon} aria-hidden="true">
+                  {discoverMeta.author?.slice(0, 1)?.toUpperCase() || "?"}
+                </div>
+                <div>
+                  <p style={styles.authorName}>{discoverMeta.author}</p>
+                  <p style={styles.authorMeta}>Community creator</p>
+                </div>
+              </div>
+              <span style={styles.communityBadge}>Community Quiz</span>
+            </div>
+
+            <h2 style={styles.discoverTitle}>{discoverMeta.title}</h2>
+
+            <div style={styles.discoverStatsGrid}>
+              <p style={styles.discoverStat}>Category: <span style={styles.discoverStatValue}>{discoverMeta.category}</span></p>
+              <p style={styles.discoverStat}>Difficulty: <span style={styles.discoverStatValue}>{discoverMeta.difficulty}</span></p>
+              <p style={styles.discoverStat}>Est. Time: <span style={styles.discoverStatValue}>{discoverMeta.estimatedTime}</span></p>
+              <p style={styles.discoverStat}>Plays: <span style={styles.discoverStatValue}>{discoverMeta.plays}</span></p>
+              <p style={styles.discoverStat}>Rating: <span style={styles.discoverStatValue}>{Number(discoverMeta.rating || 0).toFixed(1)} / 5</span></p>
+            </div>
+          </section>
+        )}
 
         {/* Card list */}
         <div style={styles.cardList}>
@@ -694,6 +1208,20 @@ export default function Preview({ quiz, onStart, onBack, intent = "solo" }) {
         </button>
       </main>
 
+      <SettingsPanel
+        timeControl={timeControl}
+        onTimeControlChange={setTimeControl}
+        onSaveGame={handleSaveGame}
+        saveLoading={saveLoading}
+        saveMessage={saveMessage}
+        onPostDiscover={handlePostToDiscover}
+        discoverLoading={discoverLoading}
+        discoverMessage={discoverMessage}
+        loggedIn={Boolean(user)}
+        onRequireAuth={onRequireAuth}
+      />
+      </div>
+
       <style>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(20px); }
@@ -704,6 +1232,29 @@ export default function Preview({ quiz, onStart, onBack, intent = "solo" }) {
           box-shadow: 0 0 0 2px #00D2D322;
         }
         button[data-iconbtn]:hover { opacity: 1 !important; background: #1e1e2e; }
+        @media (max-width: 1024px) {
+          .preview-body {
+            flex-direction: column-reverse !important;
+            align-items: center !important;
+            padding: 0 16px !important;
+          }
+          .preview-main {
+            width: 100% !important;
+            padding-top: 20px !important;
+          }
+          .preview-sidebar {
+            position: relative !important;
+            top: 0 !important;
+            max-width: 100% !important;
+            padding-left: 0 !important;
+            padding-top: 20px !important;
+          }
+        }
+        @media (max-width: 600px) {
+          .preview-header {
+            padding: 14px 16px !important;
+          }
+        }
       `}</style>
     </div>
   );
@@ -717,6 +1268,13 @@ const styles = {
     fontFamily: "'DM Sans', sans-serif",
     display: "flex",
     flexDirection: "column",
+  },
+  body: {
+    display: "flex",
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "flex-start",
+    padding: "0 20px",
   },
   header: {
     display: "flex",
@@ -744,6 +1302,26 @@ const styles = {
     fontSize: "18px",
     color: "#F1F2F6",
     letterSpacing: "-0.3px",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  headerActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+  },
+  saveBtn: {
+    background: "rgba(20, 45, 78, 0.95)",
+    color: "#d8e7fb",
+    border: "1px solid #3f6c9b",
+    borderRadius: "10px",
+    padding: "10px 16px",
+    fontSize: "14px",
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "'DM Sans', sans-serif",
+    whiteSpace: "nowrap",
   },
   startBtn: {
     background: "#00D2D3",
@@ -756,6 +1334,15 @@ const styles = {
     cursor: "pointer",
     fontFamily: "'DM Sans', sans-serif",
     whiteSpace: "nowrap",
+    boxShadow: "0 4px 14px rgba(0, 210, 211, 0.35)",
+  },
+  saveBanner: {
+    background: "#10243d",
+    border: "1px solid #35618f",
+    color: "#8fe0ff",
+    padding: "10px 32px",
+    fontSize: "13px",
+    fontWeight: 600,
   },
   errorBanner: {
     background: "#1e0f0f",
@@ -767,11 +1354,10 @@ const styles = {
     fontWeight: 500,
   },
   main: {
-    flex: 1,
-    maxWidth: "720px",
     width: "100%",
-    margin: "0 auto",
-    padding: "32px 20px 60px",
+    maxWidth: "720px",
+    flexShrink: 0,
+    padding: "32px 0 60px",
     animation: "fadeUp 0.4s ease both",
   },
   controlsRow: {
@@ -821,14 +1407,86 @@ const styles = {
     display: "flex",
     flexDirection: "column",
   },
+  discoverSummary: {
+    border: "1px solid #0F3460",
+    background: "#20233D",
+    borderRadius: "14px",
+    padding: "14px",
+    marginBottom: "14px",
+  },
+  discoverHeaderRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "8px",
+    flexWrap: "wrap",
+  },
+  authorWrap: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+  },
+  authorIcon: {
+    width: "38px",
+    height: "38px",
+    borderRadius: "999px",
+    background: "#00D2D3",
+    color: "#0E1A2B",
+    display: "grid",
+    placeItems: "center",
+    fontWeight: 800,
+    fontSize: "16px",
+  },
+  authorName: {
+    margin: 0,
+    fontSize: "14px",
+    fontWeight: 700,
+    color: "#F1F2F6",
+  },
+  authorMeta: {
+    margin: "2px 0 0 0",
+    color: "#B0BAC3",
+    fontSize: "12px",
+  },
+  communityBadge: {
+    border: "1px solid #2B5A8A",
+    borderRadius: "999px",
+    padding: "4px 10px",
+    fontSize: "11px",
+    fontWeight: 700,
+    color: "#00D2D3",
+    letterSpacing: "0.4px",
+    textTransform: "uppercase",
+  },
+  discoverTitle: {
+    margin: "12px 0 10px 0",
+    fontSize: "22px",
+    lineHeight: 1.2,
+    color: "#F1F2F6",
+    fontFamily: "'Syne', sans-serif",
+  },
+  discoverStatsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+    gap: "8px",
+  },
+  discoverStat: {
+    margin: 0,
+    color: "#B0BAC3",
+    fontSize: "13px",
+  },
+  discoverStatValue: {
+    color: "#F1F2F6",
+    fontWeight: 700,
+  },
   addBtn: {
     width: "100%",
-    background: "transparent",
-    border: "2px dashed #0F3460",
+    background: "rgba(0, 210, 211, 0.05)",
+    border: "2px dashed #00D2D3",
     borderRadius: "14px",
-    color: "#B0BAC3",
-    fontSize: "14px",
-    fontWeight: 500,
+    color: "#00D2D3",
+    fontSize: "15px",
+    fontWeight: 600,
     padding: "16px",
     cursor: "pointer",
     marginTop: "4px",
@@ -839,7 +1497,7 @@ const styles = {
   backLink: {
     background: "none",
     border: "none",
-    color: "#4a4a5e",
+    color: "#7a7a9a",
     fontSize: "13px",
     cursor: "pointer",
     display: "block",
@@ -848,4 +1506,3 @@ const styles = {
     padding: "4px",
   },
 };
-

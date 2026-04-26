@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 
 // Classic Kahoot-inspired answer colors
@@ -9,47 +9,89 @@ const CHOICE_COLORS = [
   { bg: "#26890c", hover: "#1b6408", label: "■" }, // green  — square
 ];
 
+function normalizeTimeControl(quiz) {
+  const seconds = Number(quiz?.timeControl?.secondsPerQuestion);
+  const enabled = Boolean(quiz?.timeControl?.enabled && Number.isFinite(seconds) && seconds >= 5);
+  return {
+    enabled,
+    secondsPerQuestion: enabled ? Math.min(120, Math.max(5, Math.round(seconds))) : 0,
+  };
+}
+
+function formatCountdown(ms) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return minutes > 0 ? `${minutes}:${String(seconds).padStart(2, "0")}` : `${seconds}s`;
+}
+
 const pbStyles = {
   container: {
     display: "flex",
-    flexDirection: "column",
-    gap: "8px",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "4px",
     width: "100%",
     boxSizing: "border-box",
+    padding: "4px 0",
   },
-  textRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    fontSize: "14px",
-    fontWeight: "bold",
-    color: "#B0BAC3",
-    textTransform: "uppercase",
-    letterSpacing: "1px",
-    fontFamily: "'Syne', sans-serif",
-  },
-  track: {
-    width: "100%",
-    height: "8px",
-    background: "#252A4A",
-    borderRadius: "4px",
-    overflow: "hidden",
-    border: "1px solid #0F3460",
-  },
-  fill: {
-    height: "100%",
-    background: "linear-gradient(90deg, #6153cc, #00D2D3)",
-    borderRadius: "4px",
-    transition: "width 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
-  },
+  dot: {
+    flexShrink: 0,
+    borderRadius: "50%",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+  }
 };
 
-function ProgressBar({ current, total }) {
-  const pct = Math.max(0, Math.min(100, (current / total) * 100));
+function ProgressBar({ results, current }) {
+  const isFew = results.length < 6;
+  
   return (
-    <div style={pbStyles.container}>
-      <div style={pbStyles.track}>
-        <div style={{ ...pbStyles.fill, width: `${pct}%` }} />
-      </div>
+    <div style={{
+      ...pbStyles.container,
+      justifyContent: isFew ? "center" : "space-between",
+      gap: isFew ? "clamp(16px, 4vw, 32px)" : "4px"
+    }}>
+      {results.map((res, i) => {
+        let bgColor = "#252A4A";
+        let border = "2px solid #0F3460";
+        let transform = "scale(1)";
+        let boxShadow = "none";
+        
+        const isCurrent = i === current;
+        
+        if (res === "correct") {
+          bgColor = "#26890c";
+          border = "2px solid #26890c";
+        } else if (res === "wrong") {
+          bgColor = "#e21b3c";
+          border = "2px solid #e21b3c";
+        } else if (res === "completed") {
+          bgColor = "#00D2D3";
+          border = "2px solid #00D2D3";
+        }
+        
+        if (isCurrent && res === "pending") {
+          bgColor = "transparent";
+          border = "2px solid #00D2D3";
+          transform = "scale(1.3)";
+          boxShadow = "0 0 8px rgba(0, 210, 211, 0.4)";
+        } else if (isCurrent && res !== "pending") {
+          transform = "scale(1.3)";
+          boxShadow = `0 0 8px ${bgColor}88`;
+        }
+        
+        return (
+          <div key={i} style={{
+            ...pbStyles.dot,
+            width: "clamp(8px, 2vw, 12px)",
+            height: "clamp(8px, 2vw, 12px)",
+            background: bgColor,
+            border: border,
+            transform: transform,
+            boxShadow: boxShadow
+          }} />
+        );
+      })}
     </div>
   );
 }
@@ -59,7 +101,7 @@ function ScoreScreen({ score, total, onRestart, onJoinNew, leaderboard, isMultip
   const emoji = pct === 100 ? "🏆" : pct >= 70 ? "🎉" : pct >= 40 ? "🙂" : "😅";
 
   return (
-    <div style={{ ...scoreStyles.wrap, padding: "40px", boxSizing: "border-box" }}>
+    <div style={{ ...scoreStyles.wrap, padding: "clamp(20px, 5vw, 40px)", boxSizing: "border-box" }}>
       <div style={scoreStyles.emoji}>{emoji}</div>
       <h1 style={scoreStyles.h1}>Quiz complete!</h1>
       <div style={scoreStyles.scoreBox}>
@@ -69,19 +111,19 @@ function ScoreScreen({ score, total, onRestart, onJoinNew, leaderboard, isMultip
       <div style={scoreStyles.pct}>{pct}% correct</div>
 
       {isMultiplayer && leaderboard && Object.keys(leaderboard).length > 0 && (
-        <div style={{ marginTop: "32px", width: "100%", maxWidth: "500px", background: "#252A4A", borderRadius: "16px", padding: "24px", border: "1px solid #0F3460", display: "flex", flexDirection: "column", gap: "8px", maxHeight: "40vh", overflowY: "auto" }}>
+        <div style={{ marginTop: "24px", width: "100%", maxWidth: "500px", background: "#252A4A", borderRadius: "16px", padding: "clamp(14px, 4vw, 24px)", border: "1px solid #0F3460", display: "flex", flexDirection: "column", gap: "8px", maxHeight: "40vh", overflowY: "auto" }}>
            <h2 style={{ color: "#F1F2F6", margin: "0 0 16px 0", fontSize: "24px", fontFamily: "'Syne', sans-serif", borderBottom: "1px solid #16213E", paddingBottom: "12px" }}>Final Leaderboard</h2>
            {Object.entries(leaderboard)
              .sort(([, a], [, b]) => b - a)
              .map(([name, pts], i) => (
-                <div key={name} style={{ display: "flex", justifyContent: "space-between", padding: "12px", borderBottom: i < Object.entries(leaderboard).length - 1 ? "1px solid #16213E" : "none", alignItems: "center" }}>
+                <div key={name} style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", borderBottom: i < Object.entries(leaderboard).length - 1 ? "1px solid #16213E" : "none", alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ color: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#B0BAC3", fontWeight: i < 3 ? "bold" : "normal", fontSize: "20px", width: "30px" }}>
+                    <span style={{ color: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#B0BAC3", fontWeight: i < 3 ? "bold" : "normal", fontSize: "clamp(14px, 3.5vw, 20px)", width: "30px" }}>
                       {i + 1}.
                     </span>
-                    <span style={{ color: i === 0 ? "#00D2D3" : "#F1F2F6", fontWeight: i < 3 ? "bold" : "normal", fontSize: "20px" }}>{name}</span>
+                    <span style={{ color: i === 0 ? "#00D2D3" : "#F1F2F6", fontWeight: i < 3 ? "bold" : "normal", fontSize: "clamp(14px, 3.5vw, 20px)" }}>{name}</span>
                   </div>
-                  <span style={{ color: "#B0BAC3", fontWeight: "bold", fontSize: "20px" }}>{pts} pts</span>
+                  <span style={{ color: "#B0BAC3", fontWeight: "bold", fontSize: "clamp(14px, 3.5vw, 20px)" }}>{pts} pts</span>
                 </div>
              ))}
         </div>
@@ -94,7 +136,7 @@ function ScoreScreen({ score, total, onRestart, onJoinNew, leaderboard, isMultip
           </button>
         )}
         <button style={{...scoreStyles.btn, marginTop: 0, width: "100%", boxSizing: "border-box", ...(isMultiplayer && onJoinNew ? { background: "#FF6B6B", color: "#F1F2F6", border: "none" } : {})}} onClick={onRestart}>
-          {isMultiplayer ? "Exit Game" : "Try another document →"}
+          {isMultiplayer ? "Exit Game" : "New Quiz →"}
         </button>
       </div>
       <style>{`@keyframes popIn { from{opacity:0;transform:scale(0.8)} to{opacity:1;transform:scale(1)} }`}</style>
@@ -116,7 +158,7 @@ const scoreStyles = {
   h1: {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 800,
-    fontSize: "40px",
+    fontSize: "clamp(28px, 6vw, 40px)",
     color: "#F1F2F6",
     margin: 0,
     letterSpacing: "-1px",
@@ -125,7 +167,7 @@ const scoreStyles = {
   scoreNum: {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 800,
-    fontSize: "72px",
+    fontSize: "clamp(48px, 10vw, 72px)",
     color: "#00D2D3",
     lineHeight: 1,
   },
@@ -145,9 +187,25 @@ const scoreStyles = {
   },
 };
 
-export default function Quiz({ quiz, onRestart, onJoinNew, onScoreUpdate, onAnswerSubmit, currentQuestionIndex = null, leaderboard = null, streaks = null, isHostMode = false, hostAnswers = {}, triggerNextQuestion = null, hostRevealed = false, onReveal = null }) {
+export default function Quiz({
+  quiz,
+  onRestart,
+  onJoinNew,
+  onAnswerSubmit,
+  currentQuestionIndex = null,
+  leaderboard = null,
+  streaks = null,
+  isHostMode = false,
+  hostAnswers = {},
+  triggerNextQuestion = null,
+  hostRevealed = false,
+  onReveal = null,
+  questionTimer = null,
+  autoReveal = true,
+}) {
   const { questions } = quiz;
   const total = questions.length;
+  const timerSettings = useMemo(() => normalizeTimeControl(quiz), [quiz]);
 
   const isMultiplayer = currentQuestionIndex !== null;
 
@@ -162,35 +220,183 @@ export default function Quiz({ quiz, onRestart, onJoinNew, onScoreUpdate, onAnsw
   const [streak,    setStreak]    = useState(0);
   const [done,      setDone]      = useState(false);
   const [showConfirmEnd, setShowConfirmEnd] = useState(false);
+  const [soloQuestionStartedAt, setSoloQuestionStartedAt] = useState(() => (
+    !isMultiplayer && timerSettings.enabled ? Date.now() : null
+  ));
+  const [timeLeftMs, setTimeLeftMs] = useState(() => (
+    timerSettings.enabled ? timerSettings.secondsPerQuestion * 1000 : 0
+  ));
+  
+  const [results, setResults] = useState(() => new Array(total).fill("pending"));
 
   const [lockedLeaderboard, setLockedLeaderboard] = useState(leaderboard || {});
   const [lockedStreaks, setLockedStreaks] = useState(streaks || {});
+  const hostAdvanceTimeoutRef = useRef(null);
+  const soloAdvanceTimeoutRef = useRef(null);
+  const timerFiredForRef = useRef(-1);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (revealed || done) {
       setLockedLeaderboard(leaderboard || {});
       setLockedStreaks(streaks || {});
     }
   }, [leaderboard, streaks, revealed, done]);
 
-  // When host moves to the next question, reset selection state
-  React.useEffect(() => {
-    if (isMultiplayer) {
-      if (current < total) {
-        setSelected(null);
-        setRevealed(false);
-      } else {
-        setDone(true);
+  // When question changes, reset all per-question state
+  useEffect(() => {
+    if (current < total) {
+      if (hostAdvanceTimeoutRef.current) {
+        window.clearTimeout(hostAdvanceTimeoutRef.current);
+        hostAdvanceTimeoutRef.current = null;
       }
+      if (soloAdvanceTimeoutRef.current) {
+        window.clearTimeout(soloAdvanceTimeoutRef.current);
+        soloAdvanceTimeoutRef.current = null;
+      }
+      timerFiredForRef.current = -1;
+      setSelected(null);
+      setRevealed(false);
+      if (timerSettings.enabled) {
+        setTimeLeftMs(timerSettings.secondsPerQuestion * 1000);
+        if (!isMultiplayer) {
+          setSoloQuestionStartedAt(Date.now());
+        }
+      }
+    } else {
+      setDone(true);
     }
-  }, [current, total, isMultiplayer]);
+  }, [current, total, isMultiplayer, timerSettings.enabled, timerSettings.secondsPerQuestion]);
+
+  const activeTimer = useMemo(() => {
+    if (!timerSettings.enabled || current >= total || done) {
+      return null;
+    }
+
+    if (isMultiplayer) {
+      if (!questionTimer?.startedAt || !questionTimer?.durationSeconds) {
+        return null;
+      }
+      return {
+        startedAt: Number(questionTimer.startedAt),
+        durationSeconds: Number(questionTimer.durationSeconds),
+      };
+    }
+
+    if (!soloQuestionStartedAt) {
+      return null;
+    }
+
+    return {
+      startedAt: soloQuestionStartedAt,
+      durationSeconds: timerSettings.secondsPerQuestion,
+    };
+  }, [timerSettings, current, done, isMultiplayer, questionTimer, soloQuestionStartedAt]);
+
+  useEffect(() => {
+    if (!activeTimer) {
+      setTimeLeftMs(0);
+      return;
+    }
+
+    // In solo, stop ticking after reveal (no point counting down). In multiplayer, keep running.
+    if (!isMultiplayer && (revealed || done)) {
+      return;
+    }
+
+    if (done) {
+      return;
+    }
+
+    const calc = () => Math.max(0, activeTimer.durationSeconds * 1000 - (Date.now() - activeTimer.startedAt));
+
+    setTimeLeftMs(calc());
+    const intervalId = window.setInterval(() => setTimeLeftMs(calc()), 200);
+    return () => window.clearInterval(intervalId);
+  }, [activeTimer, revealed, done, isMultiplayer]);
+
+  useEffect(() => {
+    return () => {
+      if (hostAdvanceTimeoutRef.current) {
+        window.clearTimeout(hostAdvanceTimeoutRef.current);
+      }
+      if (soloAdvanceTimeoutRef.current) {
+        window.clearTimeout(soloAdvanceTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const q = questions[current < total ? current : total - 1] || questions[0];
 
   const showResults = isMultiplayer && !isHostMode ? hostRevealed : revealed;
+  const timerExpired = Boolean(activeTimer && timeLeftMs <= 0);
+  const timerText = activeTimer ? formatCountdown(timeLeftMs) : null;
+  
+  useEffect(() => {
+    if (showResults && current < total) {
+      setResults(prev => {
+        const next = [...prev];
+        if (isHostMode) {
+          next[current] = "completed";
+        } else if (selected === q.correct_index) {
+          next[current] = "correct";
+        } else {
+          next[current] = "wrong";
+        }
+        return next;
+      });
+    }
+  }, [showResults, isHostMode, selected, current, q, total]);
+
+  const revealAndAdvanceHost = () => {
+    if (revealed) return;
+    setRevealed(true);
+    if (onReveal) {
+      onReveal();
+    }
+    if (hostAdvanceTimeoutRef.current) {
+      window.clearTimeout(hostAdvanceTimeoutRef.current);
+    }
+    hostAdvanceTimeoutRef.current = window.setTimeout(() => {
+      if (triggerNextQuestion) {
+        triggerNextQuestion();
+      }
+    }, 3000);
+  };
+
+  useEffect(() => {
+    if (!timerExpired || revealed) {
+      return;
+    }
+    // Prevent firing more than once per question
+    if (timerFiredForRef.current === current) {
+      return;
+    }
+    timerFiredForRef.current = current;
+
+    if (isHostMode) {
+      if (autoReveal) revealAndAdvanceHost();
+      return;
+    }
+
+    setStreak(0);
+    setSoloQuestionStartedAt(null);
+
+    if (autoReveal) {
+      setRevealed(true);
+    }
+
+    if (!isMultiplayer) {
+      if (soloAdvanceTimeoutRef.current) {
+        window.clearTimeout(soloAdvanceTimeoutRef.current);
+      }
+      soloAdvanceTimeoutRef.current = window.setTimeout(() => {
+        setLocalCurrent((c) => c + 1);
+      }, 2200);
+    }
+  }, [timerExpired, revealed, isHostMode, autoReveal, current]);
 
   const handleSelect = (idx) => {
-    if (revealed || isHostMode) return;
+    if (revealed || isHostMode || timerExpired) return;
     setSelected(idx);
     setRevealed(true);
     let newScore = score;
@@ -204,34 +410,17 @@ export default function Quiz({ quiz, onRestart, onJoinNew, onScoreUpdate, onAnsw
        newStreak = 0;
        setStreak(newStreak);
     }
-    if (onScoreUpdate) {
-       onScoreUpdate(newScore, newStreak);
-    }
     if (onAnswerSubmit) {
        onAnswerSubmit(current, idx);
     }
   };
 
   const handleHostNext = () => {
-    setRevealed(true);
-    if (onReveal) {
-      onReveal();
-    }
-    setTimeout(() => {
-       if (triggerNextQuestion) {
-          triggerNextQuestion();
-       }
-    }, 3000);
+    revealAndAdvanceHost();
   };
 
   const handleNextLocal = () => {
-    if (localCurrent + 1 >= total) {
-      setDone(true);
-    } else {
-      setLocalCurrent((c) => c + 1);
-      setSelected(null);
-      setRevealed(false);
-    }
+    setLocalCurrent((c) => c + 1);
   };
 
   if (done) {
@@ -246,15 +435,25 @@ export default function Quiz({ quiz, onRestart, onJoinNew, onScoreUpdate, onAnsw
     <div style={styles.page}>
       {/* Top bar (minimalist loading screen) */}
       <header style={styles.header}>
-        <div style={styles.headerTop}>
+        <div style={styles.headerTop} className="quiz-header-top">
           <span style={styles.logo}>Kuizu</span>
-            <div style={{ flex: 1, maxWidth: "1000px", display: "flex", justifyContent: "center", alignItems: "center", margin: "0 auto", gap: "16px" }}>
+            <div style={{ flex: 1, maxWidth: "1000px", display: "flex", justifyContent: "center", alignItems: "center", margin: "0 auto", gap: "16px" }} className="quiz-progress-row">
               <div style={{ width: "100%" }}>
-                <ProgressBar current={current + (revealed ? 1 : 0)} total={total} />
+                <ProgressBar results={results} current={current} />
               </div>
               <span style={{ color: "#B0BAC3", fontWeight: "bold", fontSize: "16px", whiteSpace: "nowrap", fontFamily: "'Syne', sans-serif" }}>
                 {Math.min(current + (revealed || isHostMode ? 1 : 0), total)} / {total}
               </span>
+              {activeTimer && (
+                <span
+                  style={{
+                    ...styles.timerChip,
+                    ...(timerExpired ? styles.timerChipExpired : {}),
+                  }}
+                >
+                  {timerExpired ? "Time's up" : timerText}
+                </span>
+              )}
             </div>
             <span style={styles.scoreChip}>
               {isHostMode ? (
@@ -289,7 +488,7 @@ export default function Quiz({ quiz, onRestart, onJoinNew, onScoreUpdate, onAnsw
           </div>
         </header>
 
-      <div style={{ display: "flex", flex: 1, overflow: "hidden", width: "100%" }}>
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", width: "100%" }} className="quiz-layout">
         <main style={{...styles.main, overflowY: "auto"}}>
           {/* Question card */}
           <div style={styles.questionCard} key={current}>
@@ -298,7 +497,10 @@ export default function Quiz({ quiz, onRestart, onJoinNew, onScoreUpdate, onAnsw
           </div>
 
         {/* Answer grid */}
-        <div style={styles.grid}>
+        <div style={{
+          ...styles.grid,
+          gridTemplateColumns: q.choices.length === 2 ? '1fr' : 'repeat(2, 1fr)',
+        }} className="quiz-choices-grid">
           {q.choices.map((choice, idx) => {
             const color = CHOICE_COLORS[idx];
             let bg = color.bg;
@@ -339,7 +541,7 @@ export default function Quiz({ quiz, onRestart, onJoinNew, onScoreUpdate, onAnsw
                   key={idx}
                   style={{ ...styles.choiceBtn, background: bg, ...extra, position: "relative", overflow: "hidden" }}
                   onClick={() => handleSelect(idx)}
-                  disabled={revealed || isHostMode}
+                  disabled={revealed || isHostMode || timerExpired}
                 >
                   {isHostMode && showResults && (
                      <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: `${pct}%`, background: "rgba(255, 255, 255, 0.35)", zIndex: 1, transition: "width 0.6s ease-out" }} />
@@ -353,7 +555,7 @@ export default function Quiz({ quiz, onRestart, onJoinNew, onScoreUpdate, onAnsw
                       color.label
                     )}
                   </span>
-                  <span style={{ ...styles.choiceText, position: "relative", zIndex: 2, fontSize: choice.length > 50 ? "clamp(18px, 1.5vw, 24px)" : choice.length > 30 ? "clamp(24px, 2.5vw, 36px)" : undefined }}>{choice}</span>
+                <span style={{ ...styles.choiceText, position: "relative", zIndex: 2, fontSize: choice.length > 50 ? "clamp(14px, 3.5vw, 24px)" : choice.length > 30 ? "clamp(16px, 4vw, 36px)" : undefined }}>{choice}</span>
                 </button>
               );
             })}
@@ -395,7 +597,9 @@ export default function Quiz({ quiz, onRestart, onJoinNew, onScoreUpdate, onAnsw
                 style={{ padding: "16px 32px", fontSize: "20px", background: "#00D2D3", color: "#16213E", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}
                 onClick={handleHostNext}
               >
-                {current + 1 === total ? "Reveal & End Game" : "Reveal & Next Question \u2192"}
+                {timerExpired
+                  ? (current + 1 === total ? "Time's Up: End Game" : "Time's Up: Next Question \u2192")
+                  : (current + 1 === total ? "Reveal & End Game" : "Reveal & Next Question \u2192")}
               </button>
             </div>
           )}
@@ -414,7 +618,7 @@ export default function Quiz({ quiz, onRestart, onJoinNew, onScoreUpdate, onAnsw
               boxShadow: "0 12px 48px rgba(0,0,0,0.3)",
               maxHeight: "calc(100vh - 160px)",
               overflowY: "auto"
-           }}>
+           }} className="host-leaderboard">
               <h2 style={{ margin: "0 0 clamp(16px, 1.5vw, 24px) 0", fontSize: "clamp(24px, 2vw, 32px)", color: "#F1F2F6", fontFamily: "'Syne', sans-serif", borderBottom: "1px solid #16213E", paddingBottom: "clamp(12px, 1vw, 16px)" }}>
                 Live Leaderboard
               </h2>
@@ -426,32 +630,32 @@ export default function Quiz({ quiz, onRestart, onJoinNew, onScoreUpdate, onAnsw
                     const isOnStreak = playerStreak >= 2;
                     
                     return (
-                      <div key={name} style={{ 
-                        display: "flex", 
-                        justifyContent: "space-between", 
-                        alignItems: "center", 
-                        padding: "20px", 
-                        background: isOnStreak ? "linear-gradient(90deg, rgba(255,159,67,0.1), rgba(255,107,107,0.1))" : "#16213E", 
+                      <div key={name} style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "clamp(12px, 2vw, 20px)",
+                        background: isOnStreak ? "linear-gradient(90deg, rgba(255,159,67,0.1), rgba(255,107,107,0.1))" : "#16213E",
                         borderRadius: "16px",
                         border: isOnStreak ? "1px solid #FF9F43" : "1px solid #0F3460",
                         position: "relative",
                         animation: isOnStreak ? "firePulse 1.5s infinite alternate" : "none"
                       }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                          <span style={{ 
-                            fontSize: "24px", 
-                            fontWeight: "bold", 
+                        <div style={{ display: "flex", alignItems: "center", gap: "clamp(8px, 1.5vw, 16px)", minWidth: 0 }}>
+                          <span style={{
+                            fontSize: "clamp(16px, 2.5vw, 24px)",
+                            fontWeight: "bold",
                             color: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#B0BAC3",
-                            width: "36px"
+                            flexShrink: 0,
                           }}>
                             {i + 1}.
                           </span>
-                          <span style={{ fontSize: "24px", fontWeight: "600", color: "#F1F2F6" }}>
+                          <span style={{ fontSize: "clamp(16px, 2.5vw, 24px)", fontWeight: "600", color: "#F1F2F6", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {name}
                           </span>
-                          {isOnStreak && <span style={{ fontSize: "20px", filter: "drop-shadow(0 0 4px rgba(255,159,67,0.8))" }}>🔥 {playerStreak}</span>}
+                          {isOnStreak && <span style={{ fontSize: "clamp(14px, 2vw, 20px)", filter: "drop-shadow(0 0 4px rgba(255,159,67,0.8))", flexShrink: 0 }}>🔥 {playerStreak}</span>}
                         </div>
-                        <span style={{ fontSize: "24px", fontWeight: "bold", color: "#00D2D3" }}>
+                        <span style={{ fontSize: "clamp(16px, 2.5vw, 24px)", fontWeight: "bold", color: "#00D2D3", flexShrink: 0 }}>
                           {score}
                         </span>
                       </div>
@@ -471,6 +675,24 @@ export default function Quiz({ quiz, onRestart, onJoinNew, onScoreUpdate, onAnsw
             from { opacity:0; transform: translateY(16px); }
             to   { opacity:1; transform: translateY(0); }
           }
+        @media (max-width: 768px) {
+          .quiz-choices-grid { grid-template-columns: 1fr !important; }
+          .quiz-layout {
+            flex-direction: column !important;
+            overflow-y: auto !important;
+          }
+          .host-leaderboard {
+            width: calc(100% - 32px) !important;
+            margin: 16px !important;
+            max-height: none !important;
+          }
+          .quiz-header-top {
+            flex-direction: column !important;
+            gap: 12px !important;
+            padding: 12px 16px !important;
+          }
+          .quiz-progress-row { width: 100% !important; }
+        }
         `}</style>
       </div>
     );
@@ -497,8 +719,8 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "0 32px",
-    gap: "32px",
+    padding: "0 clamp(16px, 3vw, 32px)",
+    gap: "clamp(12px, 2vw, 32px)",
   },
   logo: {
     fontFamily: "'Syne', sans-serif",
@@ -515,6 +737,28 @@ const styles = {
     color: "#F1F2F6",
     fontWeight: 500,
   },
+  timerChip: {
+    background: "rgba(0, 210, 211, 0.12)",
+    border: "1px solid rgba(0, 210, 211, 0.35)",
+    borderRadius: "999px",
+    padding: "10px 18px",
+    color: "#c9fbff",
+    fontWeight: 700,
+    fontSize: "15px",
+    whiteSpace: "nowrap",
+    minWidth: "120px",
+    textAlign: "center",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    lineHeight: 1,
+    flexShrink: 0,
+  },
+  timerChipExpired: {
+    background: "rgba(255, 107, 107, 0.12)",
+    border: "1px solid rgba(255, 107, 107, 0.4)",
+    color: "#ffc3cb",
+  },
   main: {
     flex: 1,
     display: "flex",
@@ -530,9 +774,9 @@ const styles = {
     background: "#252A4A",
     border: "1px solid #0F3460",
     borderRadius: "clamp(20px, 2vw, 32px)",
-    padding: "clamp(40px, 6vh, 100px) clamp(30px, 4vw, 60px)",
+    padding: "clamp(24px, 4vh, 100px) clamp(16px, 4vw, 60px)",
     width: "100%",
-    marginBottom: "clamp(30px, 4vh, 60px)",
+    marginBottom: "clamp(20px, 4vh, 60px)",
     animation: "slideUp 0.35s ease both",
     boxSizing: "border-box",
     textAlign: "center",
@@ -552,7 +796,7 @@ const styles = {
     textTransform: "uppercase",
   },
   questionText: {
-    fontSize: "clamp(36px, 4vw, 64px)",
+    fontSize: "clamp(24px, 5vw, 64px)",
     fontWeight: 700,
     lineHeight: 1.3,
     margin: 0,
@@ -569,23 +813,22 @@ const styles = {
   choiceBtn: {
     display: "flex",
     alignItems: "center",
-    gap: "clamp(16px, 2vw, 32px)",
-    padding: "clamp(24px, 4vh, 40px) clamp(24px, 3vw, 48px)",
+    gap: "clamp(12px, 2vw, 32px)",
+    padding: "clamp(16px, 2vh, 40px) clamp(16px, 2vw, 48px)",
     borderRadius: "clamp(16px, 1.5vw, 24px)",
     border: "none",
     cursor: "pointer",
     textAlign: "left",
-    fontSize: "clamp(24px, 3.5vw, 56px)",
+    fontSize: "clamp(18px, 4vw, 56px)",
     fontFamily: "'DM Sans', sans-serif",
     fontWeight: 600,
     color: "#16213E",
     transition: "opacity 0.2s, transform 0.15s, outline 0.1s",
-    height: "clamp(150px, 20vh, 240px)",
-    maxHeight: "240px",
+    minHeight: "clamp(70px, 12vh, 240px)",
     overflow: "hidden",
   },
   choiceShape: {
-    fontSize: "clamp(32px, 3vw, 48px)",
+    fontSize: "clamp(24px, 4vw, 48px)",
     flexShrink: 0,
     opacity: 0.85,
   },
@@ -656,4 +899,3 @@ const styles = {
     color: "#F1F2F6",
   },
 };
-
