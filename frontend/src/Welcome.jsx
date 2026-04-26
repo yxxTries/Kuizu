@@ -1,10 +1,32 @@
 import React from "react";
 import { COLORS, FONTS } from "./theme.js";
 
-export default function Welcome({ onSignIn, onCreate, onJoin }) {
+export default function Welcome({ user, onSignIn, onSignOut, onCreate, onJoin }) {
+  const username = user?.username || user?.email?.split("@")[0] || "";
+
   return (
     <div style={styles.page}>
       <style>{`
+        .welcome-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 40px;
+          width: 100%;
+        }
+        .welcome-greeting {
+          font-family: ${FONTS.display};
+          font-size: clamp(32px, 5vw, 48px);
+          font-weight: 800;
+          color: ${COLORS.ink};
+          text-align: center;
+          margin: 0;
+          animation: fadeDown 0.4s ease-out;
+        }
+        @keyframes fadeDown {
+          from { opacity: 0; transform: translateY(-15px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         .welcome-grid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -55,28 +77,47 @@ export default function Welcome({ onSignIn, onCreate, onJoin }) {
         }
       `}</style>
 
-      <div className="welcome-grid">
-        <button
-          type="button"
-          className="welcome-card welcome-card-signin"
-          onClick={onSignIn}
-        >
-          SIGN IN
-        </button>
-        <button
-          type="button"
-          className="welcome-card welcome-card-create"
-          onClick={onCreate}
-        >
-          CREATE GAME
-        </button>
-        <button
-          type="button"
-          className="welcome-card welcome-card-join"
-          onClick={onJoin}
-        >
-          JOIN GAME
-        </button>
+      <div className="welcome-container">
+        {user && (
+          <h1 className="welcome-greeting">Hi {username}</h1>
+        )}
+        <div className="welcome-grid">
+          {user ? (
+            <button
+              type="button"
+              className="welcome-card welcome-card-signin"
+              onClick={() => {
+                if (window.confirm("Are you sure you want to sign out?")) {
+                  onSignOut();
+                }
+              }}
+            >
+              SIGN OUT
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="welcome-card welcome-card-signin"
+              onClick={onSignIn}
+            >
+              SIGN IN
+            </button>
+          )}
+          <button
+            type="button"
+            className="welcome-card welcome-card-create"
+            onClick={onCreate}
+          >
+            {user ? "HOME" : "CREATE GAME"}
+          </button>
+          <button
+            type="button"
+            className="welcome-card welcome-card-join"
+            onClick={onJoin}
+          >
+            JOIN GAME
+          </button>
+        </div>
       </div>
     </div>
   );

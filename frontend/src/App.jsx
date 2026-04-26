@@ -588,13 +588,14 @@ function HomeRoute({
   username, profileInitial, onProfileMenuToggle, onAuthOpen, onLogout,
   onPlay, onHost, onSaveGame, onPostDiscover, navigate,
 }) {
-  // Logged-in users skip the Welcome screen
-  const showDashboard = Boolean(user) || enteredCreate;
+  const showDashboard = enteredCreate;
 
   if (!showDashboard && !authBooting) {
     return (
       <Welcome
+        user={user}
         onSignIn={onAuthOpen}
+        onSignOut={onLogout}
         onCreate={() => setEnteredCreate(true)}
         onJoin={() => navigate("/join")}
       />
