@@ -3,10 +3,10 @@ import { useAutoAnimate } from "@formkit/auto-animate/react";
 
 // Classic Kahoot-inspired answer colors
 const CHOICE_COLORS = [
-  { bg: "#e21b3c", hover: "#c5102e", label: "▲" }, // red    — triangle
-  { bg: "#1368ce", hover: "#0d55a8", label: "◆" }, // blue   — diamond
-  { bg: "#d89e00", hover: "#b88200", label: "●" }, // yellow — circle
-  { bg: "#26890c", hover: "#1b6408", label: "■" }, // green  — square
+  { bg: "#E89B8C", hover: "#C25E4A", label: "▲" }, // red    — triangle
+  { bg: "#7FA3C9", hover: "#5A7FA8", label: "◆" }, // blue   — diamond
+  { bg: "#E8C76B", hover: "#D9B25A", label: "●" }, // yellow — circle
+  { bg: "#82A87B", hover: "#5C8657", label: "■" }, // green  — square
 ];
 
 function normalizeTimeControl(quiz) {
@@ -52,29 +52,29 @@ function ProgressBar({ results, current }) {
       gap: isFew ? "clamp(16px, 4vw, 32px)" : "4px"
     }}>
       {results.map((res, i) => {
-        let bgColor = "#252A4A";
-        let border = "2px solid #0F3460";
+        let bgColor = "#F4ECD2";
+        let border = "2px solid #E5DCC2";
         let transform = "scale(1)";
         let boxShadow = "none";
         
         const isCurrent = i === current;
         
         if (res === "correct") {
-          bgColor = "#26890c";
-          border = "2px solid #26890c";
+          bgColor = "#82A87B";
+          border = "2px solid #82A87B";
         } else if (res === "wrong") {
-          bgColor = "#e21b3c";
-          border = "2px solid #e21b3c";
+          bgColor = "#E89B8C";
+          border = "2px solid #E89B8C";
         } else if (res === "completed") {
-          bgColor = "#00D2D3";
-          border = "2px solid #00D2D3";
+          bgColor = "#5A7FA8";
+          border = "2px solid #5A7FA8";
         }
         
         if (isCurrent && res === "pending") {
           bgColor = "transparent";
-          border = "2px solid #00D2D3";
+          border = "2px solid #5A7FA8";
           transform = "scale(1.3)";
-          boxShadow = "0 0 8px rgba(0, 210, 211, 0.4)";
+          boxShadow = "0 0 8px rgba(127, 163, 201, 0.4)";
         } else if (isCurrent && res !== "pending") {
           transform = "scale(1.3)";
           boxShadow = `0 0 8px ${bgColor}88`;
@@ -111,19 +111,19 @@ function ScoreScreen({ score, total, onRestart, onJoinNew, leaderboard, isMultip
       <div style={scoreStyles.pct}>{pct}% correct</div>
 
       {isMultiplayer && leaderboard && Object.keys(leaderboard).length > 0 && (
-        <div style={{ marginTop: "24px", width: "100%", maxWidth: "500px", background: "#252A4A", borderRadius: "16px", padding: "clamp(14px, 4vw, 24px)", border: "1px solid #0F3460", display: "flex", flexDirection: "column", gap: "8px", maxHeight: "40vh", overflowY: "auto" }}>
-           <h2 style={{ color: "#F1F2F6", margin: "0 0 16px 0", fontSize: "24px", fontFamily: "'Syne', sans-serif", borderBottom: "1px solid #16213E", paddingBottom: "12px" }}>Final Leaderboard</h2>
+        <div style={{ marginTop: "24px", width: "100%", maxWidth: "500px", background: "#F4ECD2", borderRadius: "16px", padding: "clamp(14px, 4vw, 24px)", border: "1px solid #E5DCC2", display: "flex", flexDirection: "column", gap: "8px", maxHeight: "40vh", overflowY: "auto" }}>
+           <h2 style={{ color: "#2A3340", margin: "0 0 16px 0", fontSize: "24px", fontFamily: "'Syne', sans-serif", borderBottom: "1px solid #FFFCF0", paddingBottom: "12px" }}>Final Leaderboard</h2>
            {Object.entries(leaderboard)
              .sort(([, a], [, b]) => b - a)
              .map(([name, pts], i) => (
-                <div key={name} style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", borderBottom: i < Object.entries(leaderboard).length - 1 ? "1px solid #16213E" : "none", alignItems: "center" }}>
+                <div key={name} style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", borderBottom: i < Object.entries(leaderboard).length - 1 ? "1px solid #FFFCF0" : "none", alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ color: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#B0BAC3", fontWeight: i < 3 ? "bold" : "normal", fontSize: "clamp(14px, 3.5vw, 20px)", width: "30px" }}>
+                    <span style={{ color: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#5C6877", fontWeight: i < 3 ? "bold" : "normal", fontSize: "clamp(14px, 3.5vw, 20px)", width: "30px" }}>
                       {i + 1}.
                     </span>
-                    <span style={{ color: i === 0 ? "#00D2D3" : "#F1F2F6", fontWeight: i < 3 ? "bold" : "normal", fontSize: "clamp(14px, 3.5vw, 20px)" }}>{name}</span>
+                    <span style={{ color: i === 0 ? "#5A7FA8" : "#2A3340", fontWeight: i < 3 ? "bold" : "normal", fontSize: "clamp(14px, 3.5vw, 20px)" }}>{name}</span>
                   </div>
-                  <span style={{ color: "#B0BAC3", fontWeight: "bold", fontSize: "clamp(14px, 3.5vw, 20px)" }}>{pts} pts</span>
+                  <span style={{ color: "#5C6877", fontWeight: "bold", fontSize: "clamp(14px, 3.5vw, 20px)" }}>{pts} pts</span>
                 </div>
              ))}
         </div>
@@ -131,11 +131,11 @@ function ScoreScreen({ score, total, onRestart, onJoinNew, leaderboard, isMultip
 
       <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "24px", width: "100%", maxWidth: "320px" }}>
         {isMultiplayer && onJoinNew && (
-          <button style={{...scoreStyles.btn, marginTop: 0, width: "100%", background: "#00D2D3", color: "#16213E", border: "none", boxSizing: "border-box"}} onClick={onJoinNew}>
+          <button style={{...scoreStyles.btn, marginTop: 0, width: "100%", background: "#5A7FA8", color: "#FFFCF0", border: "none", boxSizing: "border-box"}} onClick={onJoinNew}>
             Join New Game →
           </button>
         )}
-        <button style={{...scoreStyles.btn, marginTop: 0, width: "100%", boxSizing: "border-box", ...(isMultiplayer && onJoinNew ? { background: "#FF6B6B", color: "#F1F2F6", border: "none" } : {})}} onClick={onRestart}>
+        <button style={{...scoreStyles.btn, marginTop: 0, width: "100%", boxSizing: "border-box", ...(isMultiplayer && onJoinNew ? { background: "#D77966", color: "#2A3340", border: "none" } : {})}} onClick={onRestart}>
           {isMultiplayer ? "Exit Game" : "New Quiz →"}
         </button>
       </div>
@@ -159,7 +159,7 @@ const scoreStyles = {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 800,
     fontSize: "clamp(28px, 6vw, 40px)",
-    color: "#F1F2F6",
+    color: "#2A3340",
     margin: 0,
     letterSpacing: "-1px",
   },
@@ -168,15 +168,15 @@ const scoreStyles = {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 800,
     fontSize: "clamp(48px, 10vw, 72px)",
-    color: "#00D2D3",
+    color: "#5A7FA8",
     lineHeight: 1,
   },
-  scoreOf: { fontSize: "28px", color: "#4a4a6a" },
-  pct: { fontSize: "18px", color: "#B0BAC3" },
+  scoreOf: { fontSize: "28px", color: "#8A95A3" },
+  pct: { fontSize: "18px", color: "#5C6877" },
   btn: {
     marginTop: "24px",
-    background: "#00D2D3",
-    color: "#16213E",
+    background: "#5A7FA8",
+    color: "#FFFCF0",
     border: "none",
     borderRadius: "12px",
     padding: "16px 40px",
@@ -441,7 +441,7 @@ export default function Quiz({
               <div style={{ width: "100%" }}>
                 <ProgressBar results={results} current={current} />
               </div>
-              <span style={{ color: "#B0BAC3", fontWeight: "bold", fontSize: "16px", whiteSpace: "nowrap", fontFamily: "'Syne', sans-serif" }}>
+              <span style={{ color: "#5C6877", fontWeight: "bold", fontSize: "16px", whiteSpace: "nowrap", fontFamily: "'Syne', sans-serif" }}>
                 {Math.min(current + (revealed || isHostMode ? 1 : 0), total)} / {total}
               </span>
               {activeTimer && (
@@ -459,12 +459,12 @@ export default function Quiz({
               {isHostMode ? (
                 showConfirmEnd ? (
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <span style={{ color: "#F1F2F6", fontWeight: 500 }}>End Game?</span>
-                    <span onClick={onRestart} style={{ cursor: "pointer", color: "#FF6B6B", fontWeight: 600 }}>Yes</span>
-                    <span onClick={() => setShowConfirmEnd(false)} style={{ cursor: "pointer", color: "#00D2D3", fontWeight: 600 }}>No</span>
+                    <span style={{ color: "#2A3340", fontWeight: 500 }}>End Game?</span>
+                    <span onClick={onRestart} style={{ cursor: "pointer", color: "#D77966", fontWeight: 600 }}>Yes</span>
+                    <span onClick={() => setShowConfirmEnd(false)} style={{ cursor: "pointer", color: "#5A7FA8", fontWeight: 600 }}>No</span>
                   </div>
                 ) : (
-                  <span onClick={() => setShowConfirmEnd(true)} style={{ cursor: "pointer", color: "#FF6B6B", fontWeight: 600 }}>
+                  <span onClick={() => setShowConfirmEnd(true)} style={{ cursor: "pointer", color: "#D77966", fontWeight: 600 }}>
                     End Game
                   </span>
                 )
@@ -473,12 +473,12 @@ export default function Quiz({
                   {!isMultiplayer && <span style={{ fontWeight: 600 }}>Score: {score}/{total}</span>}
                   {showConfirmEnd ? (
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                      <span style={{ color: "#F1F2F6", fontWeight: 500 }}>Leave?</span>
-                      <span onClick={onRestart} style={{ cursor: "pointer", color: "#FF6B6B", fontWeight: 600 }}>Yes</span>
-                      <span onClick={() => setShowConfirmEnd(false)} style={{ cursor: "pointer", color: "#00D2D3", fontWeight: 600 }}>No</span>
+                      <span style={{ color: "#2A3340", fontWeight: 500 }}>Leave?</span>
+                      <span onClick={onRestart} style={{ cursor: "pointer", color: "#D77966", fontWeight: 600 }}>Yes</span>
+                      <span onClick={() => setShowConfirmEnd(false)} style={{ cursor: "pointer", color: "#5A7FA8", fontWeight: 600 }}>No</span>
                     </div>
                   ) : (
-                    <span onClick={() => setShowConfirmEnd(true)} style={{ cursor: 'pointer', color: '#FF6B6B', fontWeight: 600 }}>
+                    <span onClick={() => setShowConfirmEnd(true)} style={{ cursor: 'pointer', color: '#D77966', fontWeight: 600 }}>
                       Leave Game
                     </span>
                   )}
@@ -519,7 +519,7 @@ export default function Quiz({
               if (showResults) {
                 if (idx === q.correct_index) {
                   bg = color.bg;
-                  extra = { outline: "4px solid #16213E", outlineOffset: "2px", transform: "scale(1.03)" };
+                  extra = { outline: "4px solid #FFFCF0", outlineOffset: "2px", transform: "scale(1.03)" };
                 } else if (idx === selected || isHostMode) {
                   bg = color.bg;
                   extra = { opacity: 0.65, filter: "grayscale(40%)" };
@@ -530,7 +530,7 @@ export default function Quiz({
               } else if (revealed && !isHostMode) {
                 // User has answered but results not revealed yet
                 if (idx === selected) {
-                  extra = { outline: "4px solid #16213E", outlineOffset: "2px", transform: "scale(1.03)" };
+                  extra = { outline: "4px solid #FFFCF0", outlineOffset: "2px", transform: "scale(1.03)" };
                 } else {
                   extra = { opacity: 0.5 };
                 }
@@ -573,7 +573,7 @@ export default function Quiz({
                   </div>
 
                   {isMultiplayer ? (
-                    <p style={{ textAlign: "center", color: "#B0BAC3", margin: "10px 0" }}>
+                    <p style={{ textAlign: "center", color: "#5C6877", margin: "10px 0" }}>
                       Waiting for the host to start the next question...
                     </p>
                   ) : (
@@ -583,7 +583,7 @@ export default function Quiz({
                   )}
                 </>
               ) : (
-                <div style={{...styles.feedbackCorrect, background: "#252A4A", color: "#00D2D3"}}>
+                <div style={{...styles.feedbackCorrect, background: "#F4ECD2", color: "#5A7FA8"}}>
                   Waiting for host to reveal the answer...
                 </div>
               )}
@@ -594,7 +594,7 @@ export default function Quiz({
           {isHostMode && !revealed && (
             <div style={{ textAlign: "center", marginTop: 30 }}>
               <button
-                style={{ padding: "16px 32px", fontSize: "20px", background: "#00D2D3", color: "#16213E", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}
+                style={{ padding: "16px 32px", fontSize: "20px", background: "#5A7FA8", color: "#FFFCF0", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}
                 onClick={handleHostNext}
               >
                 {timerExpired
@@ -608,8 +608,8 @@ export default function Quiz({
         {isHostMode && lockedLeaderboard && (
            <div style={{
               width: "clamp(300px, 25vw, 600px)",
-              background: "#252A4A",
-              border: "1px solid #0F3460",
+              background: "#F4ECD2",
+              border: "1px solid #E5DCC2",
               borderRadius: "clamp(16px, 1.5vw, 24px)",
               margin: "clamp(16px, 2vw, 32px) clamp(16px, 2vw, 32px) clamp(16px, 2vw, 32px) 0",
               display: "flex",
@@ -619,7 +619,7 @@ export default function Quiz({
               maxHeight: "calc(100vh - 160px)",
               overflowY: "auto"
            }} className="host-leaderboard">
-              <h2 style={{ margin: "0 0 clamp(16px, 1.5vw, 24px) 0", fontSize: "clamp(24px, 2vw, 32px)", color: "#F1F2F6", fontFamily: "'Syne', sans-serif", borderBottom: "1px solid #16213E", paddingBottom: "clamp(12px, 1vw, 16px)" }}>
+              <h2 style={{ margin: "0 0 clamp(16px, 1.5vw, 24px) 0", fontSize: "clamp(24px, 2vw, 32px)", color: "#2A3340", fontFamily: "'Syne', sans-serif", borderBottom: "1px solid #FFFCF0", paddingBottom: "clamp(12px, 1vw, 16px)" }}>
                 Live Leaderboard
               </h2>
               <div ref={leaderboardRef} style={{ display: "flex", flexDirection: "column", gap: "clamp(12px, 1vw, 16px)" }}>
@@ -635,9 +635,9 @@ export default function Quiz({
                         justifyContent: "space-between",
                         alignItems: "center",
                         padding: "clamp(12px, 2vw, 20px)",
-                        background: isOnStreak ? "linear-gradient(90deg, rgba(255,159,67,0.1), rgba(255,107,107,0.1))" : "#16213E",
+                        background: isOnStreak ? "linear-gradient(90deg, rgba(232, 155, 140,0.1), rgba(215, 121, 102,0.1))" : "#FFFCF0",
                         borderRadius: "16px",
-                        border: isOnStreak ? "1px solid #FF9F43" : "1px solid #0F3460",
+                        border: isOnStreak ? "1px solid #E89B8C" : "1px solid #E5DCC2",
                         position: "relative",
                         animation: isOnStreak ? "firePulse 1.5s infinite alternate" : "none"
                       }}>
@@ -645,17 +645,17 @@ export default function Quiz({
                           <span style={{
                             fontSize: "clamp(16px, 2.5vw, 24px)",
                             fontWeight: "bold",
-                            color: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#B0BAC3",
+                            color: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#5C6877",
                             flexShrink: 0,
                           }}>
                             {i + 1}.
                           </span>
-                          <span style={{ fontSize: "clamp(16px, 2.5vw, 24px)", fontWeight: "600", color: "#F1F2F6", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <span style={{ fontSize: "clamp(16px, 2.5vw, 24px)", fontWeight: "600", color: "#2A3340", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {name}
                           </span>
-                          {isOnStreak && <span style={{ fontSize: "clamp(14px, 2vw, 20px)", filter: "drop-shadow(0 0 4px rgba(255,159,67,0.8))", flexShrink: 0 }}>🔥 {playerStreak}</span>}
+                          {isOnStreak && <span style={{ fontSize: "clamp(14px, 2vw, 20px)", filter: "drop-shadow(0 0 4px rgba(232, 155, 140,0.8))", flexShrink: 0 }}>🔥 {playerStreak}</span>}
                         </div>
-                        <span style={{ fontSize: "clamp(16px, 2.5vw, 24px)", fontWeight: "bold", color: "#00D2D3", flexShrink: 0 }}>
+                        <span style={{ fontSize: "clamp(16px, 2.5vw, 24px)", fontWeight: "bold", color: "#5A7FA8", flexShrink: 0 }}>
                           {score}
                         </span>
                       </div>
@@ -668,8 +668,8 @@ export default function Quiz({
 
       <style>{`
         @keyframes firePulse {
-          0% { box-shadow: 0 0 5px rgba(255, 107, 107, 0.2); border-color: rgba(255, 159, 67, 0.5); }
-          100% { box-shadow: 0 0 15px rgba(255, 107, 107, 0.6); border-color: rgba(255, 159, 67, 1); }
+          0% { box-shadow: 0 0 5px rgba(215, 121, 102, 0.2); border-color: rgba(232, 155, 140, 0.5); }
+          100% { box-shadow: 0 0 15px rgba(215, 121, 102, 0.6); border-color: rgba(232, 155, 140, 1); }
         }
         @keyframes slideUp {
             from { opacity:0; transform: translateY(16px); }
@@ -701,8 +701,8 @@ export default function Quiz({
 const styles = {
   page: {
     minHeight: "100vh",
-    background: "#1A1A2E",
-    color: "#F1F2F6",
+    background: "#FBF6E9",
+    color: "#2A3340",
     fontFamily: "'DM Sans', sans-serif",
     display: "flex",
     flexDirection: "column",
@@ -711,8 +711,8 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     padding: "clamp(12px, 1.5vw, 24px) 0",
-    background: "#16213E",
-    borderBottom: "1px solid #1e1e2e",
+    background: "#FFFCF0",
+    borderBottom: "1px solid #EFE7CF",
     boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
   },
   headerTop: {
@@ -726,23 +726,23 @@ const styles = {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 800,
     fontSize: "24px",
-    color: "#F1F2F6",
+    color: "#2A3340",
     letterSpacing: "-0.5px",
   },
   scoreChip: {
-    background: "#1a1a2e",
+    background: "#FBF6E9",
     borderRadius: "20px",
     padding: "6px 14px",
     fontSize: "14px",
-    color: "#F1F2F6",
+    color: "#2A3340",
     fontWeight: 500,
   },
   timerChip: {
-    background: "rgba(0, 210, 211, 0.12)",
-    border: "1px solid rgba(0, 210, 211, 0.35)",
+    background: "rgba(127, 163, 201, 0.12)",
+    border: "1px solid rgba(127, 163, 201, 0.35)",
     borderRadius: "999px",
     padding: "10px 18px",
-    color: "#c9fbff",
+    color: "#D8E4F0",
     fontWeight: 700,
     fontSize: "15px",
     whiteSpace: "nowrap",
@@ -755,9 +755,9 @@ const styles = {
     flexShrink: 0,
   },
   timerChipExpired: {
-    background: "rgba(255, 107, 107, 0.12)",
-    border: "1px solid rgba(255, 107, 107, 0.4)",
-    color: "#ffc3cb",
+    background: "rgba(215, 121, 102, 0.12)",
+    border: "1px solid rgba(215, 121, 102, 0.4)",
+    color: "#E89B8C",
   },
   main: {
     flex: 1,
@@ -771,8 +771,8 @@ const styles = {
     boxSizing: "border-box",
   },
   questionCard: {
-    background: "#252A4A",
-    border: "1px solid #0F3460",
+    background: "#F4ECD2",
+    border: "1px solid #E5DCC2",
     borderRadius: "clamp(20px, 2vw, 32px)",
     padding: "clamp(24px, 4vh, 100px) clamp(16px, 4vw, 60px)",
     width: "100%",
@@ -784,13 +784,13 @@ const styles = {
   },
   qNumber: {
     display: "inline-block",
-    background: "rgba(124, 111, 255, 0.15)",
+    background: "rgba(127, 163, 201, 0.15)",
     padding: "clamp(6px, 1vh, 8px) clamp(16px, 2vw, 24px)",
     borderRadius: "20px",
     fontFamily: "'Syne', sans-serif",
     fontWeight: 700,
     fontSize: "clamp(16px, 1.5vw, 20px)",
-    color: "#00D2D3",
+    color: "#5A7FA8",
     marginBottom: "clamp(16px, 3vh, 32px)",
     letterSpacing: "1px",
     textTransform: "uppercase",
@@ -800,7 +800,7 @@ const styles = {
     fontWeight: 700,
     lineHeight: 1.3,
     margin: 0,
-    color: "#F1F2F6",
+    color: "#2A3340",
     fontFamily: "'Syne', sans-serif",
   },
   grid: {
@@ -822,7 +822,7 @@ const styles = {
     fontSize: "clamp(18px, 4vw, 56px)",
     fontFamily: "'DM Sans', sans-serif",
     fontWeight: 600,
-    color: "#16213E",
+    color: "#FFFCF0",
     transition: "opacity 0.2s, transform 0.15s, outline 0.1s",
     minHeight: "clamp(70px, 12vh, 240px)",
     overflow: "hidden",
@@ -860,9 +860,9 @@ const styles = {
     animation: "slideUp 0.3s ease both",
   },
   feedbackCorrect: {
-    background: "#0e2e0e",
-    border: "1px solid #26890c",
-    color: "#5dd85d",
+    background: "#DFEAD9",
+    border: "1px solid #82A87B",
+    color: "#82A87B",
     borderRadius: "10px",
     padding: "14px 20px",
     fontSize: "15px",
@@ -870,9 +870,9 @@ const styles = {
     textAlign: "center",
   },
   feedbackWrong: {
-    background: "#1e0e0e",
-    border: "1px solid #6b1a1a",
-    color: "#ff7070",
+    background: "#F6D6CD",
+    border: "1px solid #D77966",
+    color: "#D77966",
     borderRadius: "10px",
     padding: "14px 20px",
     fontSize: "15px",
@@ -880,8 +880,8 @@ const styles = {
     textAlign: "center",
   },
   nextBtn: {
-    background: "#00D2D3",
-    color: "#16213E",
+    background: "#5A7FA8",
+    color: "#FFFCF0",
     border: "none",
     borderRadius: "12px",
     padding: "16px",
@@ -892,10 +892,10 @@ const styles = {
     width: "100%",
   },
   miniLeaderboard: {
-    background: "#1a1a2e",
-    border: "1px solid #0F3460",
+    background: "#FBF6E9",
+    border: "1px solid #E5DCC2",
     borderRadius: "10px",
     padding: "12px 16px",
-    color: "#F1F2F6",
+    color: "#2A3340",
   },
 };
