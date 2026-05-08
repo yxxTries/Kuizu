@@ -266,6 +266,9 @@ export default function App() {
   const [authBooting, setAuthBooting] = useState(true);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [serverStatus, setServerStatus] = useState("checking");
+  const [adBlockerWarning, setAdBlockerWarning] = useState(false);
+  const failCountRef = useRef(0);
+  const healthIntervalRef = useRef(null);
   const profileMenuRef = useRef(null);
 
   const username = user?.username || user?.email?.split("@")[0] || "";
@@ -279,34 +282,64 @@ export default function App() {
   // Server health check
   useEffect(() => {
     let cancelled = false;
-    let intervalId;
+
+    function clearPolling() {
+      if (healthIntervalRef.current) {
+        clearInterval(healthIntervalRef.current);
+        healthIntervalRef.current = null;
+      }
+    }
 
     async function checkServer() {
       try {
         const isHealthy = await checkHealth();
+        if (cancelled) return;
         if (isHealthy) {
-          if (!cancelled) setServerStatus("ready");
+          failCountRef.current = 0;
+          setAdBlockerWarning(false);
+          clearPolling();
+          setServerStatus("ready");
           return;
         }
       } catch (e) {}
 
-      if (!cancelled) setServerStatus("waking");
+      if (cancelled) return;
+      failCountRef.current += 1;
+      setServerStatus("waking");
 
-      intervalId = setInterval(async () => {
-        try {
-          const healthy = await checkHealth();
-          if (healthy) {
-            clearInterval(intervalId);
-            if (!cancelled) setServerStatus("ready");
+      if (failCountRef.current >= 5) {
+        setAdBlockerWarning(true);
+      }
+
+      if (!healthIntervalRef.current) {
+        healthIntervalRef.current = setInterval(async () => {
+          try {
+            const healthy = await checkHealth();
+            if (healthy) {
+              failCountRef.current = 0;
+              setAdBlockerWarning(false);
+              clearPolling();
+              if (!cancelled) setServerStatus("ready");
+            } else {
+              failCountRef.current += 1;
+              if (failCountRef.current >= 5) {
+                setAdBlockerWarning(true);
+              }
+            }
+          } catch (e) {
+            failCountRef.current += 1;
+            if (failCountRef.current >= 5) {
+              setAdBlockerWarning(true);
+            }
           }
-        } catch (e) {}
-      }, 3000);
+        }, 3000);
+      }
     }
 
     checkServer();
     return () => {
       cancelled = true;
-      if (intervalId) clearInterval(intervalId);
+      clearPolling();
     };
   }, []);
 
@@ -410,7 +443,7 @@ export default function App() {
           .blackout-container {
             position: fixed; inset: 0; background: ${COLORS.cream}; color: ${COLORS.ink};
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 9999;
+            z-index: 9999; padding: 0 24px;
           }
           .blackout-title {
             font-family: ${FONTS.display};
@@ -420,6 +453,19 @@ export default function App() {
             font-family: ${FONTS.body};
             font-size: 1.1rem; color: ${COLORS.inkMuted}; animation: pulse 2s infinite;
           }
+          .adblock-warning {
+            font-family: ${FONTS.body};
+            font-size: 0.95rem; color: ${COLORS.coralDark}; text-align: center;
+            max-width: 420px; line-height: 1.5; margin-top: 24px;
+            padding: 16px 20px; border: 1px solid ${COLORS.coral};
+            background: ${COLORS.coralSoft}; border-radius: 12px; animation: none;
+          }
+          .retry-btn {
+            margin-top: 20px; padding: 12px 32px; font-family: inherit; font-size: 14px;
+            font-weight: 700; border: none; border-radius: 10px; cursor: pointer;
+            background: ${COLORS.sageDark}; color: ${COLORS.creamSoft};
+          }
+          .retry-btn:hover { opacity: 0.85; }
           @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -430,6 +476,24 @@ export default function App() {
           <p className="blackout-text">
             Please wait while the servers wake up. ETA ~50s
           </p>
+          {adBlockerWarning && (
+            <div className="adblock-warning">
+              It looks like an ad blocker or browser extension may be blocking the connection to our servers.
+              Try disabling your ad blocker or whitelisting this site, then click Retry.
+            </div>
+          )}
+          <button className="retry-btn" onClick={() => {
+            failCountRef.current = 0;
+            setAdBlockerWarning(false);
+            setServerStatus("checking");
+            if (healthIntervalRef.current) {
+              clearInterval(healthIntervalRef.current);
+              healthIntervalRef.current = null;
+            }
+            window.location.reload();
+          }}>
+            Retry
+          </button>
         </div>
       </>
     );
