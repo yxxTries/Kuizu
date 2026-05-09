@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import EditMetaModal from "./EditMetaModal.jsx";
 import { deleteDiscoverPost, getDiscoverPosts, updateDiscoverPost } from "./api";
 import { useTheme } from "./ThemeContext.jsx";
@@ -113,8 +114,33 @@ export default function Discover({ onBack, onPlay, user, onRequireAuth }) {
     }
   };
 
+  const breadcrumbSchema = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.kuizu.online/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Discover Quizzes",
+        "item": "https://www.kuizu.online/discover"
+      }
+    ]
+  });
+
   return (
     <div style={styles.page} className="discover-page">
+      <Helmet>
+        <title>Discover Free Quizzes & Trivia Games — Kuizu</title>
+        <meta name="description" content="Browse hundreds of community-made quizzes on math, science, history, trivia, and more. Play solo or with friends — all free." />
+        <link rel="canonical" href="https://www.kuizu.online/discover" />
+        <script type="application/ld+json">{breadcrumbSchema}</script>
+      </Helmet>
       <style>{`
         @media (max-width: 768px) {
           .discover-page { padding-top: 124px !important; }

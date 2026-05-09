@@ -9,6 +9,7 @@ import Join from "./Join.jsx";
 import Discover from "./Discover.jsx";
 import MyGames from "./MyGames.jsx";
 import MyProfile from "./MyProfile.jsx";
+import PlayQuizPage from "./PlayQuizPage.jsx";
 import AuthModal from "./AuthModal.jsx";
 import { FONTS } from "./theme.js";
 import { useTheme } from "./ThemeContext.jsx";
@@ -36,81 +37,107 @@ const buildGlobalStyle = (COLORS) => `
     .quiz-grid { grid-template-columns: 1fr !important; }
   }
 
-  .nav-buttons-container {
+  .nav-drawer-toggle {
     position: fixed;
-    top: 14px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: center;
-    max-width: calc(100vw - 520px);
-    padding: 0 4px;
-    align-items: center;
-    z-index: 40;
-  }
-  .nav-button {
-    white-space: nowrap;
-    transition: all 0.15s ease;
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    padding: 10px 20px;
+    top: 16px;
+    left: 16px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid ${COLORS.border};
     background: ${COLORS.creamSoft};
     color: ${COLORS.ink};
-    border: 1px solid ${COLORS.border};
-    border-radius: 12px;
+    font-size: 20px;
     cursor: pointer;
-    font-weight: 600;
-    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 51;
+    transition: background 0.15s ease;
   }
-  .nav-button:hover { background: ${COLORS.yellowSoft}; }
-  .nav-button-active {
-    background: ${COLORS.sage};
-    color: ${COLORS.ink};
-    border-color: ${COLORS.sageDark};
-    font-weight: 700;
-  }
-  .nav-button-active:hover { background: ${COLORS.sageDark}; color: ${COLORS.creamSoft}; }
+  .nav-drawer-toggle:hover { background: ${COLORS.yellowSoft}; }
 
-  .nav-button-home {
-    border-radius: 22px;
-    padding: 10px 24px;
-  }
-
-  .mobile-header { display: none; }
-  .profile-controls-desktop { display: flex; }
-
-  .desktop-wordmark {
+  .nav-drawer-overlay {
     position: fixed;
-    top: 22px;
-    left: 24px;
+    inset: 0;
+    background: rgba(42, 51, 64, 0.45);
+    z-index: 48;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .nav-drawer-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .nav-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: ${COLORS.creamSoft};
+    border-right: 1px solid ${COLORS.border};
+    z-index: 49;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    gap: 4px;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    overflow-y: auto;
+  }
+  .nav-drawer.open {
+    transform: translateX(0);
+  }
+
+  .nav-drawer-wordmark {
     font-family: ${FONTS.display};
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 800;
     color: ${COLORS.ink};
     letter-spacing: -0.5px;
     line-height: 1;
     cursor: pointer;
-    z-index: 41;
+    padding: 8px 6px 20px 6px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid ${COLORS.border};
   }
 
-  .desktop-header-bg {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 68px;
+  .nav-drawer-item {
+    width: 100%;
+    text-align: left;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 10px;
     background: transparent;
-    border-bottom: 1px solid transparent;
-    z-index: 39;
-    transition: background 0.2s ease, border-bottom-color 0.2s ease;
+    color: ${COLORS.ink};
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    transition: background 0.12s ease;
   }
-  .desktop-header-bg.scrolled {
-    background: ${COLORS.cream};
-    border-bottom-color: ${COLORS.border};
+  .nav-drawer-item:hover { background: ${COLORS.yellowSoft}; }
+  .nav-drawer-item.active {
+    background: ${COLORS.sage};
+    color: ${COLORS.ink};
+    font-weight: 700;
   }
+
+  .nav-drawer-section {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: ${COLORS.inkMuted};
+    padding: 20px 16px 8px 16px;
+  }
+
+  .desktop-wordmark { display: none; }
+  .desktop-header-bg { display: none; }
+  .nav-buttons-container { display: none; }
+  .profile-controls-desktop { display: none; }
 
   @media (max-width: 768px) {
     .nav-buttons-container { display: none !important; }
@@ -436,36 +463,117 @@ export default function App() {
   }
 
   const pageMeta = {
-    "/": { title: "Kuizu — Turn slides into quizzes", description: "Upload a PDF or PPTX and instantly generate an AI-powered quiz. Play solo or host a live multiplayer game." },
-    "/home": { title: "Home — Kuizu", description: "Upload a PDF or PPTX and instantly generate an AI-powered quiz." },
-    "/quiz": { title: "Playing Quiz — Kuizu", description: "Answer questions, track your streak, and see your score." },
-    "/host": { title: "Host a Game — Kuizu", description: "Host a live multiplayer quiz. Share the PIN with friends and watch the leaderboard." },
-    "/join": { title: "Join a Game — Kuizu", description: "Enter a game PIN and nickname to join a live Kuizu multiplayer session." },
-    "/discover": { title: "Discover Quizzes — Kuizu", description: "Browse and play community-created quizzes across dozens of topics." },
-    "/profile": { title: "My Profile — Kuizu", description: "View and manage your Kuizu account settings." },
-    "/games": { title: "My Games — Kuizu", description: "Access your saved quizzes and pin your favourites for quick play." },
+    "/": {
+      title: "Kuizu — Free AI Quiz Maker | Turn Slides Into Quizzes",
+      description: "Create and share AI-generated quizzes from PDFs, PPTX, or text. Play solo or host live multiplayer games — free Kahoot alternative.",
+      robots: "index, follow",
+      schemaType: "home",
+    },
+    "/home": {
+      title: "Create a Quiz — Kuizu",
+      description: "Upload a PDF, PPTX, or type a prompt to generate multiple-choice quizzes with an AI. Edit, save, and share your quiz instantly.",
+      robots: "index, follow",
+      schemaType: "home",
+    },
+    "/quiz": {
+      title: "Playing Quiz — Kuizu",
+      description: "Answer questions, track your streak, and see your score.",
+      robots: "noindex",
+      schemaType: null,
+    },
+    "/host": {
+      title: "Host a Game — Kuizu",
+      description: "Host a live multiplayer quiz. Share the PIN with friends and watch the leaderboard.",
+      robots: "noindex",
+      schemaType: null,
+    },
+    "/join": {
+      title: "Join a Live Quiz Game — Kuizu",
+      description: "Enter a game PIN to join a real-time multiplayer quiz session. Compete with friends or classmates on live leaderboards.",
+      robots: "noindex",
+      schemaType: null,
+    },
+    "/discover": {
+      title: "Discover Free Quizzes & Trivia Games — Kuizu",
+      description: "Browse hundreds of community-made quizzes on math, science, history, trivia, and more. Play solo or with friends — all free.",
+      robots: "index, follow",
+      schemaType: "discover",
+    },
+    "/profile": {
+      title: "My Profile — Kuizu",
+      description: "View and manage your Kuizu account settings.",
+      robots: "noindex",
+      schemaType: null,
+    },
+    "/games": {
+      title: "My Games — Kuizu",
+      description: "Access your saved quizzes and pin your favourites for quick play.",
+      robots: "noindex",
+      schemaType: null,
+    },
+    "/play": {
+      title: "Play Quiz — Kuizu",
+      description: "Play a community-created quiz on Kuizu.",
+      robots: "index, follow",
+      schemaType: null,
+    },
   };
 
   const currentPath = Object.keys(pageMeta).find(
     key => window.location.pathname === key ||
-    (key === "/join" && window.location.pathname.startsWith("/join"))
+    (key === "/join" && window.location.pathname.startsWith("/join")) ||
+    (key === "/play" && window.location.pathname.startsWith("/play"))
   ) || "/";
   const meta = pageMeta[currentPath] ?? pageMeta["/"];
-  const ogImage = "/og-image.png";
+  const ogImage = "/og-image.svg";
+  const canonicalUrl = `https://www.kuizu.online${currentPath === "/" ? "" : currentPath}`;
+
+  const siteSchema = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "name": "Kuizu",
+        "url": "https://www.kuizu.online",
+        "description": "Free AI-powered quiz maker. Turn slides, PDFs, and text into interactive quizzes. Play solo or host live multiplayer games.",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "All",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      },
+      {
+        "@type": "Organization",
+        "name": "Kuizu",
+        "url": "https://www.kuizu.online",
+        "logo": "https://www.kuizu.online/og-image.svg",
+        "sameAs": ["https://github.com/yxxTries"],
+        "description": "Free AI-powered quiz maker for educators, trainers, and teams."
+      }
+    ]
+  });
 
   return (
     <>
       <Helmet>
         <title>{meta.title}</title>
         <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots || "index, follow"} />
+        <link rel="canonical" href={canonicalUrl} />
         <meta property="og:type" content="website" />
         <meta property="og:title" content={meta.title} />
         <meta property="og:description" content={meta.description} />
         <meta property="og:image" content={ogImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:site_name" content="Kuizu" />
+        <meta property="og:locale" content="en_US" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={meta.title} />
         <meta name="twitter:description" content={meta.description} />
         <meta name="twitter:image" content={ogImage} />
+        <meta name="twitter:site" content="@kuizu" />
+        <meta name="twitter:creator" content="@kuizu" />
+        <script type="application/ld+json">{siteSchema}</script>
       </Helmet>
       <style>{globalStyle}</style>
 
@@ -528,6 +636,18 @@ export default function App() {
         <Route
           path="/join/:pin?"
           element={<JoinRoute onExit={() => navigate("/home")} />}
+        />
+        <Route
+          path="/play/:id"
+          element={
+            <PlayQuizPage
+              onPlay={(quizData) => {
+                setQuiz(quizData);
+                saveQuizSession(quizData);
+                setIntent("solo");
+              }}
+            />
+          }
         />
         <Route
           path="/discover"
@@ -688,195 +808,70 @@ function MainLayout({
 }) {
   const { colors: COLORS } = useTheme();
   const [showAbout, setShowAbout] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const location = useLocation();
   const path = location.pathname;
 
-  const menuItemStyle = {
-    width: "100%",
-    textAlign: "left",
-    padding: "12px 14px",
-    border: "none",
-    background: "transparent",
-    color: COLORS.ink,
-    cursor: "pointer",
-    fontSize: 14,
-    fontFamily: "inherit",
-    fontWeight: 500,
-  };
+  const closeNav = () => setNavOpen(false);
 
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const navItem = (label, to, matchFn) => (
+    <button
+      className={`nav-drawer-item ${matchFn ? "active" : ""}`}
+      onClick={() => { navigate(to); closeNav(); }}
+    >
+      {label}
+    </button>
+  );
 
-  const navigationButtons = (
+  const drawer = (
     <>
-      <div className={`desktop-header-bg ${isScrolled ? "scrolled" : ""}`} />
-      <div className="desktop-wordmark" onClick={() => navigate("/")}>
-        Kuizu
-      </div>
-      <div className="nav-buttons-container">
-        <button onClick={() => navigate("/discover")} className={`nav-button ${path === "/discover" ? "nav-button-active" : ""}`}>Discover</button>
-        <button onClick={() => navigate("/games")} className={`nav-button ${path === "/games" ? "nav-button-active" : ""}`}>My Games</button>
-        <button onClick={() => navigate("/home")} className={`nav-button nav-button-home ${path === "/home" || path === "/" ? "nav-button-active" : ""}`}>Home</button>
-        <button onClick={() => navigate("/join")} className={`nav-button ${path.startsWith("/join") ? "nav-button-active" : ""}`}>Join a Game</button>
+      <div className={`nav-drawer-overlay ${navOpen ? "open" : ""}`} onClick={closeNav} />
+      <div className={`nav-drawer ${navOpen ? "open" : ""}`}>
+        <div className="nav-drawer-wordmark" onClick={() => { navigate("/"); closeNav(); }}>
+          Kuizu
+        </div>
+        {navItem("Home", "/home", path === "/home" || path === "/")}
+        {navItem("Discover", "/discover", path === "/discover")}
+        {navItem("My Games", "/games", path === "/games")}
+        {navItem("Join a Game", "/join", path.startsWith("/join"))}
+        <div className="nav-drawer-section">Account</div>
+        {!authBooting && !user && (
+          <button className="nav-drawer-item" onClick={() => { onAuthOpen(); closeNav(); }}>Sign In</button>
+        )}
+        {!authBooting && user && (
+          <>
+            <button className="nav-drawer-item" onClick={() => { navigate("/profile"); closeNav(); }}>
+              My Profile
+            </button>
+            <button
+              className="nav-drawer-item"
+              style={{ color: COLORS.coralDark }}
+              onClick={() => { onLogout(); closeNav(); }}
+            >Sign Out</button>
+          </>
+        )}
         <button
-          onClick={(e) => { e.stopPropagation(); setShowAbout((v) => !v); }}
-          className={`nav-button ${showAbout ? "nav-button-active" : ""}`}
-        >
-          About
-        </button>
+          className="nav-drawer-item"
+          onClick={() => { setShowAbout(true); closeNav(); }}
+        >About</button>
+        <div style={{ marginTop: "auto", padding: "16px 0 0", borderTop: `1px solid ${COLORS.border}`, display: "flex", justifyContent: "center" }}>
+          <ThemeToggle />
+        </div>
       </div>
     </>
   );
 
-  const mobileHeader = (
-    <div className={`mobile-header ${isScrolled ? "scrolled" : ""}`}>
-      <div className="mobile-header-top">
-        <span className="mobile-wordmark">Kuizu</span>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <ThemeToggle size={38} />
-          {!authBooting && !user && (
-            <>
-              <button className="mobile-auth-btn" onClick={onAuthOpen}>Sign In</button>
-              <button className="mobile-avatar-btn" onClick={onProfileMenuToggle} aria-label="Open menu">
-                ☰
-              </button>
-            </>
-          )}
-          {!authBooting && user && (
-            <button className="mobile-avatar-btn" onClick={onProfileMenuToggle} aria-label="Open profile menu">
-              {profileInitial}
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="mobile-nav-grid">
-        <button className={`mobile-nav-btn ${path === "/games" ? "mobile-nav-btn-active" : ""}`} onClick={() => navigate("/games")}>My Games</button>
-        <button className={`mobile-nav-btn mobile-nav-btn-home ${path === "/home" || path === "/" ? "mobile-nav-btn-active" : ""}`} onClick={() => navigate("/home")}>Home</button>
-        <button className={`mobile-nav-btn ${path.startsWith("/join") ? "mobile-nav-btn-active" : ""}`} onClick={() => navigate("/join")}>Join a Game</button>
-      </div>
-    </div>
-  );
-
-  const profileControls = (
-    <div
-      ref={profileMenuRef}
-      className="profile-controls-desktop"
-      style={{
-        position: "fixed",
-        top: 14,
-        right: 14,
-        zIndex: 50,
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        alignItems: "flex-end",
-      }}
-    >
-      {!authBooting && !user && (
-        <button
-          onClick={onAuthOpen}
-          style={{
-            padding: "10px 16px",
-            minHeight: 40,
-            background: COLORS.yellow,
-            color: COLORS.ink,
-            border: `1px solid ${COLORS.yellowDark}`,
-            borderRadius: 10,
-            cursor: "pointer",
-            fontWeight: 700,
-            fontSize: 13,
-          }}
-        >
-          Sign In
-        </button>
-      )}
-      {!authBooting && user && (
-        <button
-          onClick={onProfileMenuToggle}
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: "50%",
-            background: COLORS.blue,
-            color: COLORS.creamSoft,
-            border: `1px solid ${COLORS.blueDark}`,
-            cursor: "pointer",
-            fontWeight: 700,
-            display: "grid",
-            placeItems: "center",
-            fontSize: 15,
-          }}
-          aria-label="Open profile menu"
-        >
-          {profileInitial}
-        </button>
-      )}
-      <ThemeToggle />
-    </div>
-  );
-
-  const profileDropdown = isProfileMenuOpen && (
-    <div
-      style={{
-        position: "fixed",
-        top: 60,
-        right: 14,
-        minWidth: 210,
-        borderRadius: 12,
-        border: `1px solid ${COLORS.border}`,
-        background: COLORS.creamSoft,
-        overflow: "hidden",
-        boxShadow: "0 8px 24px rgba(42,51,64,0.12)",
-        zIndex: 51,
-      }}
-    >
-      {user && (
-        <>
-          <div style={{ padding: "12px 14px", borderBottom: `1px solid ${COLORS.border}` }}>
-            <div style={{ color: COLORS.ink, fontWeight: 700, fontSize: 14 }}>{username}</div>
-          </div>
-          <button
-            type="button"
-            onClick={() => { navigate("/profile"); onProfileMenuToggle(); }}
-            style={menuItemStyle}
-          >My Profile</button>
-          <button
-            type="button"
-            onClick={() => { navigate("/games"); onProfileMenuToggle(); }}
-            style={menuItemStyle}
-          >My Games</button>
-        </>
-      )}
-      <button
-        type="button"
-        onClick={() => { navigate("/discover"); onProfileMenuToggle(); }}
-        style={menuItemStyle}
-      >Discover</button>
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); setShowAbout(true); onProfileMenuToggle(); }}
-        style={menuItemStyle}
-      >About</button>
-      {user && (
-        <button
-          type="button"
-          onClick={onLogout}
-          style={{ ...menuItemStyle, borderTop: `1px solid ${COLORS.border}`, color: COLORS.coralDark }}
-        >Sign Out</button>
-      )}
-    </div>
-  );
-
   return (
     <div ref={profileMenuRef} style={{ position: "relative" }}>
-      {navigationButtons}
-      {profileControls}
-      {mobileHeader}
-      {profileDropdown}
+      <button
+        className="nav-drawer-toggle"
+        onClick={() => setNavOpen((v) => !v)}
+        aria-label="Toggle navigation"
+        style={{ left: navOpen ? 296 : 16, transition: "left 0.25s ease" }}
+      >
+        {navOpen ? "\u2715" : "\u2630"}
+      </button>
+      {drawer}
       {children}
       {showAbout && <TypewriterOverlay onDismiss={() => setShowAbout(false)} />}
     </div>

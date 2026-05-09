@@ -189,24 +189,27 @@ export default function Welcome({ user, onSignIn, onSignOut, onCreate, onJoin })
         }
         .welcome-grid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 20px;
           width: 100%;
-          max-width: 960px;
+          max-width: 780px;
+        }
+        .welcome-grid > :first-child {
+          grid-column: 1 / -1;
         }
         .welcome-card {
           background: ${COLORS.creamSoft};
           border: 1px solid ${COLORS.border};
           border-radius: 20px;
-          padding: 56px 28px;
+          padding: 36px 24px;
           font-family: ${FONTS.display};
           font-weight: 800;
-          font-size: 22px;
+          font-size: 20px;
           letter-spacing: 0.5px;
           color: ${COLORS.ink};
           cursor: pointer;
           transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-          min-height: 220px;
+          min-height: 160px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -218,7 +221,14 @@ export default function Welcome({ user, onSignIn, onSignOut, onCreate, onJoin })
         }
         .welcome-card-signin { background: ${COLORS.yellow}; }
         .welcome-card-signin:hover { background: ${COLORS.yellowSoft}; }
-        .welcome-card-create { background: ${COLORS.blue}; color: ${COLORS.creamSoft}; }
+        .welcome-card-create {
+          background: ${COLORS.blue};
+          color: ${COLORS.creamSoft};
+          min-height: 340px;
+          font-size: 38px;
+          padding: 72px 36px;
+          border-radius: 24px;
+        }
         .welcome-card-create:hover { background: ${COLORS.blueDark}; }
         .welcome-card-join { background: ${COLORS.sage}; color: ${COLORS.ink}; }
         .welcome-card-join:hover { background: ${COLORS.sageDark}; }
@@ -229,10 +239,18 @@ export default function Welcome({ user, onSignIn, onSignOut, onCreate, onJoin })
             gap: 14px;
             max-width: 420px;
           }
+          .welcome-grid > :first-child {
+            grid-column: auto;
+          }
           .welcome-card {
             min-height: 120px;
             padding: 36px 24px;
             font-size: 20px;
+          }
+          .welcome-card-create {
+            min-height: 200px;
+            font-size: 28px;
+            padding: 48px 24px;
           }
         }
       `}</style>
@@ -255,6 +273,13 @@ export default function Welcome({ user, onSignIn, onSignOut, onCreate, onJoin })
           <h1 className="welcome-greeting">Hi {username}</h1>
         )}
         <div className="welcome-grid">
+          <button
+            type="button"
+            className="welcome-card welcome-card-create"
+            onClick={onCreate}
+          >
+            {user ? "HOME" : "BUILD A QUIZ"}
+          </button>
           {user ? (
             <button
               type="button"
@@ -276,13 +301,6 @@ export default function Welcome({ user, onSignIn, onSignOut, onCreate, onJoin })
               SIGN IN
             </button>
           )}
-          <button
-            type="button"
-            className="welcome-card welcome-card-create"
-            onClick={onCreate}
-          >
-            {user ? "HOME" : "CREATE GAME"}
-          </button>
           <button
             type="button"
             className="welcome-card welcome-card-join"
