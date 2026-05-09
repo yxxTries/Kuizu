@@ -1224,7 +1224,7 @@ const buildStyles = (COLORS) => ({
   panelTitle: {
     fontFamily: FONTS.display,
     fontSize: 22,
-    fontWeight: 800,
+    fontWeight: 700,
     color: COLORS.ink,
     margin: 0,
   },

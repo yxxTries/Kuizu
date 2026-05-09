@@ -65,7 +65,7 @@ export default function PlayQuizPage({ onPlay }) {
   const handlePlay = () => {
     if (post) {
       onPlay(post.quiz);
-      navigate("/home");
+      navigate("/quiz");
     }
   };
 
@@ -93,7 +93,7 @@ export default function PlayQuizPage({ onPlay }) {
     title: {
       fontFamily: FONTS.display,
       fontSize: "clamp(22px, 5vw, 32px)",
-      fontWeight: 800,
+      fontWeight: 700,
       margin: "0 0 8px",
     },
     meta: {

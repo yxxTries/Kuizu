@@ -3,6 +3,7 @@ import { Routes, Route, useNavigate, useSearchParams, useParams, Navigate, useLo
 import { Helmet } from "react-helmet-async";
 import Welcome from "./Welcome.jsx";
 import CreateDashboard from "./CreateDashboard.jsx";
+import CreateWizard from "./CreateWizard.jsx";
 import Quiz from "./Quiz.jsx";
 import Host from "./Host.jsx";
 import Join from "./Join.jsx";
@@ -10,11 +11,12 @@ import Discover from "./Discover.jsx";
 import MyGames from "./MyGames.jsx";
 import MyProfile from "./MyProfile.jsx";
 import PlayQuizPage from "./PlayQuizPage.jsx";
+import QuizPreview from "./QuizPreview.jsx";
 import AuthModal from "./AuthModal.jsx";
 import { FONTS } from "./theme.js";
 import { useTheme } from "./ThemeContext.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
-import { getCurrentUser, logout, saveMyGame, checkHealth, createDiscoverPost, getPreferences } from "./api";
+import { getCurrentUser, logout, saveMyGame, checkHealth, createDiscoverPost, getPreferences, deleteMyGame, deleteDiscoverPost } from "./api";
 
 const buildGlobalStyle = (COLORS) => `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -95,7 +97,7 @@ const buildGlobalStyle = (COLORS) => `
   .nav-drawer-wordmark {
     font-family: ${FONTS.display};
     font-size: 26px;
-    font-weight: 800;
+    font-weight: 700;
     color: ${COLORS.ink};
     letter-spacing: -0.5px;
     line-height: 1;
@@ -183,7 +185,7 @@ const buildGlobalStyle = (COLORS) => `
     .mobile-wordmark {
       font-family: ${FONTS.display};
       font-size: 20px;
-      font-weight: 800;
+      font-weight: 700;
       color: ${COLORS.ink};
       letter-spacing: 1px;
       line-height: 1;
@@ -261,6 +263,19 @@ const buildGlobalStyle = (COLORS) => `
       border-radius: 22px;
     }
   }
+
+  .wiz-arcade { outline: none; }
+  .wiz-arcade:hover {
+    transform: translateY(-3px) !important;
+  }
+  .wiz-arcade:active:not(:disabled) {
+    transform: translateY(2px) !important;
+    border-bottom-width: 2px !important;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.15), 0 3px 8px rgba(42,51,64,0.08) !important;
+  }
+  .wiz-arcade:disabled:hover {
+    transform: none !important;
+  }
 `;
 
 function JoinRoute({ onExit }) {
@@ -293,6 +308,10 @@ export default function App() {
   const [authBooting, setAuthBooting] = useState(true);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [serverStatus, setServerStatus] = useState("checking");
+  const [previewData, setPreviewData] = useState(null);
+  const [editingQuiz, setEditingQuiz] = useState(null);
+  const [quizSource, setQuizSource] = useState("/");
+  const location = useLocation();
   const profileMenuRef = useRef(null);
 
   const username = user?.username || user?.email?.split("@")[0] || "";
@@ -385,6 +404,7 @@ export default function App() {
     setQuiz(quizData);
     saveQuizSession(quizData);
     setIntent("solo");
+    setQuizSource(location.pathname);
     navigate("/quiz");
   };
 
@@ -392,6 +412,7 @@ export default function App() {
     setQuiz(quizData);
     saveQuizSession(quizData);
     setIntent("host");
+    setQuizSource(location.pathname);
     navigate("/host");
   };
 
@@ -406,7 +427,7 @@ export default function App() {
   const handleAuthSuccess = async (nextUser) => {
     setUser(nextUser);
     setIsProfileMenuOpen(false);
-    navigate("/home");
+    navigate("/");
     try {
       const prefs = await getPreferences();
       setAutoReveal(prefs.auto_reveal);
@@ -427,6 +448,54 @@ export default function App() {
       throw new Error("Please sign in to post on Discover.");
     }
     return createDiscoverPost(payload);
+  };
+
+  const handlePreviewPlay = (quizData) => {
+    setQuiz(quizData);
+    saveQuizSession(quizData);
+    setIntent("solo");
+    setQuizSource("/preview");
+    navigate("/quiz");
+  };
+
+  const handlePreviewHost = (quizData) => {
+    setQuiz(quizData);
+    saveQuizSession(quizData);
+    setIntent("host");
+    setQuizSource("/preview");
+    navigate("/host");
+  };
+
+  const handlePreviewEdit = (data) => {
+    setEditingQuiz({ ...data.quiz, questions: data.quiz?.questions || [] });
+    navigate("/");
+    setTimeout(() => setEditingQuiz(null), 0);
+  };
+
+  const handlePreviewDelete = async (data) => {
+    if (!window.confirm("Delete this quiz?")) return;
+    try {
+      if (data.source === "mygames") {
+        await deleteMyGame(data.gameId);
+      } else if (data.source === "discover") {
+        await deleteDiscoverPost(data.postId);
+      }
+    } catch {}
+    navigate(data.source === "mygames" ? "/games" : "/discover");
+  };
+
+  const handlePreviewSave = async (quizData) => {
+    if (!user) { setIsAuthOpen(true); return; }
+    try {
+      await saveMyGame({ title: previewData?.title || "Saved Quiz", category: previewData?.category || "General", quiz: quizData });
+    } catch {}
+  };
+
+  const handlePreviewPostDiscover = async (quizData) => {
+    if (!user) { setIsAuthOpen(true); return; }
+    try {
+      await createDiscoverPost({ title: previewData?.title || "Posted Quiz", category: previewData?.category || "General", quiz: quizData });
+    } catch {}
   };
 
   if (serverStatus !== "ready") {
@@ -581,13 +650,28 @@ export default function App() {
         <Route
           path="/"
           element={
-            <LandingRoute
+            <MainLayout
               user={user}
+              isProfileMenuOpen={isProfileMenuOpen}
+              profileMenuRef={profileMenuRef}
+              username={username}
+              profileInitial={profileInitial}
               authBooting={authBooting}
+              onProfileMenuToggle={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
               onAuthOpen={() => setIsAuthOpen(true)}
               onLogout={handleLogout}
               navigate={navigate}
-            />
+            >
+              <CreateWizard
+                user={user}
+                onPlay={handlePlay}
+                onHost={handleHostStart}
+                onSaveGame={handleSaveGame}
+                onPostDiscover={handlePostDiscover}
+                onRequireAuth={() => setIsAuthOpen(true)}
+                initialQuiz={editingQuiz}
+              />
+            </MainLayout>
           }
         />
         <Route
@@ -614,12 +698,39 @@ export default function App() {
           }
         />
         <Route
+          path="/create"
+          element={
+            <MainLayout
+              user={user}
+              isProfileMenuOpen={isProfileMenuOpen}
+              profileMenuRef={profileMenuRef}
+              username={username}
+              profileInitial={profileInitial}
+              authBooting={authBooting}
+              onProfileMenuToggle={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              onAuthOpen={() => setIsAuthOpen(true)}
+              onLogout={handleLogout}
+              navigate={navigate}
+            >
+              <CreateWizard
+                user={user}
+                onPlay={handlePlay}
+                onHost={handleHostStart}
+                onSaveGame={handleSaveGame}
+                onPostDiscover={handlePostDiscover}
+                onRequireAuth={() => setIsAuthOpen(true)}
+                initialQuiz={editingQuiz}
+              />
+            </MainLayout>
+          }
+        />
+        <Route
           path="/quiz"
           element={
             quiz ? (
-              <Quiz quiz={quiz} onRestart={() => { clearQuizSession(); navigate("/home"); }} autoReveal={autoReveal} />
+              <Quiz quiz={quiz} onRestart={() => { clearQuizSession(); navigate(quizSource); }} autoReveal={autoReveal} />
             ) : (
-              <Navigate to="/home" replace />
+              <Navigate to="/" replace />
             )
           }
         />
@@ -627,15 +738,15 @@ export default function App() {
           path="/host"
           element={
             quiz ? (
-              <Host quiz={quiz} onEnd={() => { clearQuizSession(); navigate("/home"); }} autoReveal={autoReveal} />
+              <Host quiz={quiz} onEnd={() => { clearQuizSession(); navigate(quizSource); }} autoReveal={autoReveal} />
             ) : (
-              <Navigate to="/home" replace />
+              <Navigate to="/" replace />
             )
           }
         />
         <Route
           path="/join/:pin?"
-          element={<JoinRoute onExit={() => navigate("/home")} />}
+          element={<JoinRoute onExit={() => navigate(quizSource)} />}
         />
         <Route
           path="/play/:id"
@@ -645,6 +756,7 @@ export default function App() {
                 setQuiz(quizData);
                 saveQuizSession(quizData);
                 setIntent("solo");
+                setQuizSource("/discover");
               }}
             />
           }
@@ -665,14 +777,25 @@ export default function App() {
               navigate={navigate}
             >
               <Discover
-                onBack={() => navigate("/home")}
-                onPlay={(quizData) => {
-                  setQuiz(quizData);
-                  setIntent("solo");
-                  navigate("/home");
+                onPlay={(post) => {
+                  setPreviewData({
+                    quiz: post.quiz,
+                    title: post.title,
+                    category: post.category,
+                    author: post.author,
+                    questions_count: post.questions_count,
+                    difficulty: post.difficulty,
+                    estimated_time: post.estimated_time,
+                    plays: post.plays,
+                    source: "discover",
+                    ownerId: post.user_id,
+                    postId: post.id,
+                  });
+                  navigate("/preview");
                 }}
                 user={user}
                 onRequireAuth={() => setIsAuthOpen(true)}
+                onCreate={() => navigate("/")}
               />
             </MainLayout>
           }
@@ -693,34 +816,92 @@ export default function App() {
               navigate={navigate}
             >
               <MyGames
-                onBack={() => navigate("/home")}
                 username={username}
-                onPlay={(quizData) => {
-                  setQuiz(quizData);
-                  setIntent("solo");
-                  navigate("/home");
+                onPlay={(game) => {
+                  setPreviewData({
+                    quiz: game.quiz,
+                    title: game.title,
+                    category: game.category,
+                    questions_count: game.questions_count,
+                    source: "mygames",
+                    ownerId: user?.id,
+                    gameId: game.id,
+                  });
+                  navigate("/preview");
                 }}
                 onRequireAuth={() => setIsAuthOpen(true)}
                 onEdit={(game) => {
-                  setQuiz(game.quiz);
-                  setIntent("solo");
-                  navigate("/home");
+                  setPreviewData({
+                    quiz: game.quiz,
+                    title: game.title,
+                    category: game.category,
+                    questions_count: game.questions_count,
+                    source: "mygames",
+                    ownerId: user?.id,
+                    gameId: game.id,
+                  });
+                  navigate("/preview");
                 }}
               />
             </MainLayout>
           }
         />
         <Route
+          path="/preview"
+          element={
+            previewData ? (
+              <MainLayout
+                user={user}
+                isProfileMenuOpen={isProfileMenuOpen}
+                profileMenuRef={profileMenuRef}
+                username={username}
+                profileInitial={profileInitial}
+                authBooting={authBooting}
+                onProfileMenuToggle={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                onAuthOpen={() => setIsAuthOpen(true)}
+                onLogout={handleLogout}
+                navigate={navigate}
+              >
+                <QuizPreview
+                  data={previewData}
+                  user={user}
+                  onPlay={handlePreviewPlay}
+                  onHost={handlePreviewHost}
+                  onEdit={handlePreviewEdit}
+                  onDelete={handlePreviewDelete}
+                  onSave={handlePreviewSave}
+                  onPostDiscover={handlePreviewPostDiscover}
+                  onRequireAuth={() => setIsAuthOpen(true)}
+                />
+              </MainLayout>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
           path="/profile"
           element={
-            <MyProfile
+            <MainLayout
               user={user}
-              onBack={() => navigate("/home")}
-              onRequireAuth={() => setIsAuthOpen(true)}
-              onUserUpdated={setUser}
-              autoReveal={autoReveal}
-              onAutoRevealChange={setAutoReveal}
-            />
+              isProfileMenuOpen={isProfileMenuOpen}
+              profileMenuRef={profileMenuRef}
+              username={username}
+              profileInitial={profileInitial}
+              authBooting={authBooting}
+              onProfileMenuToggle={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              onAuthOpen={() => setIsAuthOpen(true)}
+              onLogout={handleLogout}
+              navigate={navigate}
+            >
+              <MyProfile
+                user={user}
+                onRequireAuth={() => setIsAuthOpen(true)}
+                onUserUpdated={setUser}
+                autoReveal={autoReveal}
+                onAutoRevealChange={setAutoReveal}
+              />
+            </MainLayout>
           }
         />
 
@@ -759,7 +940,7 @@ function LandingRoute({ user, authBooting, onAuthOpen, onLogout, navigate }) {
       user={user}
       onSignIn={onAuthOpen}
       onSignOut={onLogout}
-      onCreate={() => navigate("/home")}
+      onCreate={() => navigate("/create")}
       onJoin={() => navigate("/join")}
     />
   );
@@ -830,7 +1011,7 @@ function MainLayout({
         <div className="nav-drawer-wordmark" onClick={() => { navigate("/"); closeNav(); }}>
           Kuizu
         </div>
-        {navItem("Home", "/home", path === "/home" || path === "/")}
+        {navItem("Home", "/", path === "/" || path === "/create" || path === "/home")}
         {navItem("Discover", "/discover", path === "/discover")}
         {navItem("My Games", "/games", path === "/games")}
         {navItem("Join a Game", "/join", path.startsWith("/join"))}
