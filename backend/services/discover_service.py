@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import HTTPException
 
 from services.user_service import get_user_by_id
-from services.game_service import _DB_LOCK, _connect, validate_quiz_payload
+from services.game_service import _DB_LOCK, _connect, _generate_share_code, validate_quiz_payload
 
 POST_COOLDOWN_SECONDS = 60
 MAX_DISCOVER_POSTS_PER_USER = 25
@@ -126,10 +126,11 @@ def create_discover_post(user_id: int, author: str, title: str, category: str, q
                     rating,
                     difficulty,
                     estimated_time,
+                    share_code,
                     created_at,
                     updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?)
                 """,
                 (
                     user_id,
@@ -139,6 +140,7 @@ def create_discover_post(user_id: int, author: str, title: str, category: str, q
                     questions_count,
                     discover_meta["difficulty"],
                     discover_meta["estimatedTime"],
+                    _generate_share_code(conn),
                     now,
                     now,
                 ),
@@ -152,6 +154,7 @@ def create_discover_post(user_id: int, author: str, title: str, category: str, q
                     dp.user_id,
                     dp.title,
                     dp.category,
+                    dp.share_code,
                     u.username AS author,
                     dp.plays,
                     dp.rating,
@@ -185,6 +188,7 @@ def list_discover_posts() -> list[dict[str, Any]]:
                     dp.user_id,
                     dp.title,
                     dp.category,
+                    dp.share_code,
                     u.username AS author,
                     dp.plays,
                     dp.rating,
@@ -300,5 +304,6 @@ def _row_to_discover_post(row: sqlite3.Row) -> dict[str, Any]:
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
         "questions_count": int(row["questions_count"]),
+        "share_code": row["share_code"] if "share_code" in row.keys() else None,
         "quiz": quiz,
     }

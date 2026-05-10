@@ -29,6 +29,7 @@ class GameResponse(BaseModel):
     pinned: bool
     updated_at: str
     questions_count: int
+    share_code: str | None = None
     quiz: dict
 
 
@@ -49,8 +50,18 @@ class DiscoverPostResponse(BaseModel):
     created_at: str
     updated_at: str
     questions_count: int
+    share_code: str | None = None
     quiz: dict
 
 
 class DiscoverPostsListResponse(BaseModel):
     posts: list[DiscoverPostResponse]
+
+
+class SharedQuizResponse(BaseModel):
+    title: str
+    category: str
+    author: str | None = None
+    questions_count: int
+    share_code: str
+    quiz: dict

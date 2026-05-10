@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useTheme } from "./ThemeContext.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
+import { useAudio } from "./AudioContext.jsx";
 
 // Classic Kahoot-inspired answer colors
 const CHOICE_COLORS = [
@@ -381,6 +382,8 @@ export default function Quiz({
   const total = questions.length;
   const timerSettings = useMemo(() => normalizeTimeControl(quiz), [quiz]);
 
+  const { isPlaying, togglePlay, nextTrack, play } = useAudio();
+
   const isMultiplayer = currentQuestionIndex !== null;
 
   const [leaderboardRef] = useAutoAnimate();
@@ -446,6 +449,11 @@ export default function Quiz({
       setDone(true);
     }
   }, [current, total, isMultiplayer, timerSettings.enabled, timerSettings.secondsPerQuestion]);
+
+  // Auto-play music when quiz starts
+  useEffect(() => {
+    play();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Persist solo progress so refreshes/accidental navigation can resume
   useEffect(() => {
@@ -665,6 +673,46 @@ export default function Quiz({
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <ThemeToggle size={36} />
+              <button
+                onClick={togglePlay}
+                title={isPlaying ? "Pause music" : "Play music"}
+                style={{
+                  background: C.quizSubCard,
+                  border: `1px solid ${C.quizCardBorder}`,
+                  borderRadius: 8,
+                  color: C.quizText,
+                  cursor: "pointer",
+                  fontSize: 14,
+                  width: 32,
+                  height: 32,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                {isPlaying ? "\u23F8" : "\u25B6"}
+              </button>
+              <button
+                onClick={nextTrack}
+                title="Skip track"
+                style={{
+                  background: C.quizSubCard,
+                  border: `1px solid ${C.quizCardBorder}`,
+                  borderRadius: 8,
+                  color: C.quizText,
+                  cursor: "pointer",
+                  fontSize: 12,
+                  width: 32,
+                  height: 32,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                {"\u23ED"}
+              </button>
               <span style={styles.scoreChip}>
                 {isHostMode ? (
                   showConfirmEnd ? (

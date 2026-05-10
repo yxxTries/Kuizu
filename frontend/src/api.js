@@ -21,7 +21,10 @@ async function request(path, options = {}) {
 
   const payload = await parseJsonSafely(response);
   if (!response.ok) {
-    throw new Error("Backend error, please try again later");
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("Authentication required. Please sign in to continue.");
+    }
+    throw new Error(payload?.detail || "Backend error, please try again later");
   }
 
   return payload;
@@ -202,5 +205,11 @@ export function updatePreferences(payload) {
   return request("/auth/me/preferences", {
     method: "PATCH",
     body: JSON.stringify(payload),
+  });
+}
+
+export function lookupSharedQuiz(code) {
+  return request(`/shared/${encodeURIComponent(code.trim())}`, {
+    method: "GET",
   });
 }

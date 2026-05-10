@@ -77,7 +77,7 @@ function formatDate(isoDate) {
   });
 }
 
-export default function MyGames({ username, onPlay, onRequireAuth }) {
+export default function MyGames({ user, username, onPlay, onRequireAuth }) {
   const { colors: COLORS } = useTheme();
   const styles = useMemo(() => getStyles(COLORS), [COLORS]);
   const [games, setGames] = useState([]);
@@ -102,6 +102,11 @@ export default function MyGames({ username, onPlay, onRequireAuth }) {
   }, []);
 
   useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     async function loadGames() {
@@ -117,7 +122,7 @@ export default function MyGames({ username, onPlay, onRequireAuth }) {
       } catch (err) {
         const message = err?.message || "Could not load your games.";
         if (!cancelled) {
-          if (/auth|401|required|token/i.test(message)) {
+          if (/sign in|auth|401|required|token/i.test(message)) {
             setAuthRequired(true);
           } else {
             setError(message);
@@ -135,7 +140,7 @@ export default function MyGames({ username, onPlay, onRequireAuth }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user]);
 
   const categories = useMemo(() => {
     const base = new Set(games.map((game) => game.category));
@@ -285,7 +290,7 @@ export default function MyGames({ username, onPlay, onRequireAuth }) {
           </div>
         </header>
 
-        {authRequired && (
+        {(!user || authRequired) && (
           <div style={styles.authPrompt}>
             <h2 style={styles.authTitle}>Sign in to view your saved games</h2>
             <p style={styles.authText}>Your collection is account-specific and protected.</p>
@@ -293,7 +298,7 @@ export default function MyGames({ username, onPlay, onRequireAuth }) {
           </div>
         )}
 
-        {!authRequired && (
+        {user && !authRequired && (
           <>
             <section style={styles.controls}>
               <input

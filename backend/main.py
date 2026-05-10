@@ -13,6 +13,7 @@ from core.config import ALLOWED_ORIGINS
 from routes.auth_routes import router as auth_router
 from routes.discover_routes import router as discover_router
 from routes.game_routes import router as game_router
+from routes.shared_routes import router as shared_router
 from services.user_service import init_user_db
 
 app = FastAPI(title="Quiz AI", version="1.0.0")
@@ -29,6 +30,7 @@ init_user_db()
 app.include_router(auth_router)
 app.include_router(game_router)
 app.include_router(discover_router)
+app.include_router(shared_router)
 
 ALLOWED_EXTENSIONS = {".pdf", ".pptx"}
 MAX_FILE_SIZE_MB   = 20

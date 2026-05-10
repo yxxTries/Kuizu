@@ -10,10 +10,11 @@ export default function QuizPreview({ data, user, onPlay, onHost, onEdit, onDele
   const { colors: COLORS } = useTheme();
   const styles = useMemo(() => buildStyles(COLORS), [COLORS]);
   const [showAnswers, setShowAnswers] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   if (!data) return null;
 
-  const { quiz, title, category, author, questions_count, difficulty, estimated_time, plays, source, ownerId } = data;
+  const { quiz, title, category, author, questions_count, difficulty, estimated_time, plays, source, ownerId, shareCode } = data;
   const questions = quiz?.questions || [];
   const timeControl = quiz?.timeControl;
   const timerSeconds = timeControl?.enabled ? timeControl.secondsPerQuestion : null;
@@ -21,7 +22,7 @@ export default function QuizPreview({ data, user, onPlay, onHost, onEdit, onDele
   const isOwner = loggedIn && user.id === ownerId;
 
   return (
-    <div style={styles.page}>
+    <div className="preview-page" style={styles.page}>
       <style>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(12px); }
@@ -58,8 +59,16 @@ export default function QuizPreview({ data, user, onPlay, onHost, onEdit, onDele
           box-shadow: 0 3px 0 ${COLORS.sageDark};
         }
         @media (max-width: 600px) {
-          .preview-actions { flex-wrap: wrap; }
-          .preview-meta { flex-wrap: wrap; gap: 8px; }
+          .preview-actions { flex-wrap: wrap; gap: 6px; }
+          .preview-actions .wiz-arcade { padding: 8px 14px !important; font-size: 13px !important; }
+          .preview-meta { flex-wrap: wrap; gap: 6px; }
+          .preview-question-card { padding: 12px 14px !important; }
+          .preview-choice { padding: 6px 10px !important; font-size: 12px !important; }
+          .preview-body-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+          .preview-page { padding-top: 60px !important; padding-bottom: 100px !important; }
+        }
+        @media (max-width: 400px) {
+          .preview-actions .wiz-arcade { padding: 7px 10px !important; font-size: 12px !important; }
         }
         .wiz-arcade { outline: none; }
         .wiz-arcade:hover {
@@ -86,7 +95,7 @@ export default function QuizPreview({ data, user, onPlay, onHost, onEdit, onDele
               )}
             </div>
             <h1 style={styles.title}>{title || "Untitled Quiz"}</h1>
-            <div style={styles.metaRow}>
+            <div className="preview-meta" style={styles.metaRow}>
               {author && <span style={styles.metaItem}>{author}</span>}
               <span style={styles.metaItem}>{questions_count || questions.length} questions</span>
               {estimated_time && <span style={styles.metaItem}>{estimated_time}</span>}
@@ -94,6 +103,36 @@ export default function QuizPreview({ data, user, onPlay, onHost, onEdit, onDele
               {typeof plays === "number" && <span style={styles.metaItem}>{plays} plays</span>}
               {isOwner && <span style={{ ...styles.metaItem, color: COLORS.sageDark, fontWeight: 700 }}>Yours</span>}
             </div>
+            {shareCode && (
+              <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: COLORS.inkMuted, textTransform: "uppercase", letterSpacing: 0.5 }}>Share Code</span>
+                <code
+                  onClick={() => {
+                    if (shareCode) {
+                      navigator.clipboard.writeText(shareCode).catch(() => {});
+                      setCodeCopied(true);
+                      setTimeout(() => setCodeCopied(false), 1500);
+                    }
+                  }}
+                  style={{
+                    fontFamily: "monospace",
+                    fontSize: 18,
+                    fontWeight: 700,
+                    background: COLORS.yellowSoft,
+                    color: COLORS.ink,
+                    padding: "4px 12px",
+                    borderRadius: 8,
+                    border: `1px solid ${COLORS.yellowDark}`,
+                    letterSpacing: 2,
+                    cursor: "pointer",
+                    userSelect: "none",
+                  }}
+                  title="Click to copy"
+                >
+                  {codeCopied ? "Copied!" : shareCode}
+                </code>
+              </div>
+            )}
           </div>
         </div>
 
@@ -115,13 +154,13 @@ export default function QuizPreview({ data, user, onPlay, onHost, onEdit, onDele
               Delete
             </button>
           )}
-          {source === "discover" && loggedIn && !isOwner && (
-            <button className="wiz-arcade" style={styles.btnGhost} onClick={() => onSave(quiz)}>
+          {source === "discover" && !isOwner && (
+            <button className="wiz-arcade" style={styles.btnGhost} onClick={() => { if (!loggedIn) { onRequireAuth?.(); return; } onSave(quiz); }}>
               Save
             </button>
           )}
-          {source === "mygames" && loggedIn && isOwner && (
-            <button className="wiz-arcade" style={styles.btnGhost} onClick={() => onPostDiscover(quiz)}>
+          {source === "mygames" && (
+            <button className="wiz-arcade" style={styles.btnGhost} onClick={() => { if (!loggedIn) { onRequireAuth?.(); return; } onPostDiscover(quiz); }}>
               Post
             </button>
           )}
@@ -130,7 +169,7 @@ export default function QuizPreview({ data, user, onPlay, onHost, onEdit, onDele
 
       {/* Toggle + Question list */}
       <div style={styles.body}>
-        <div style={styles.bodyHeader}>
+        <div className="preview-body-header" style={styles.bodyHeader}>
           <h2 style={styles.sectionTitle}>Questions</h2>
           <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: COLORS.inkSoft }}>Show Answers</span>
@@ -239,7 +278,7 @@ const buildStyles = (COLORS) => ({
   },
   btnPlay: {
     background: COLORS.sageDark,
-    color: COLORS.creamSoft,
+    color: COLORS.ink,
     border: "none",
     borderBottom: "4px solid #375031",
     borderRadius: 999,

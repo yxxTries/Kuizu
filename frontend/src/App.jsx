@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, useNavigate, useSearchParams, useParams, Navigate, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Welcome from "./Welcome.jsx";
-import CreateDashboard from "./CreateDashboard.jsx";
 import CreateWizard from "./CreateWizard.jsx";
 import Quiz from "./Quiz.jsx";
 import Host from "./Host.jsx";
@@ -17,6 +16,9 @@ import { FONTS } from "./theme.js";
 import { useTheme } from "./ThemeContext.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import { getCurrentUser, logout, saveMyGame, checkHealth, createDiscoverPost, getPreferences, deleteMyGame, deleteDiscoverPost } from "./api";
+import { AudioProvider } from "./AudioContext.jsx";
+import AudioPlayer from "./AudioPlayer.jsx";
+import ShareCodeEntry from "./ShareCodeEntry.jsx";
 
 const buildGlobalStyle = (COLORS) => `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -608,12 +610,6 @@ export default function App() {
       robots: "index, follow",
       schemaType: "home",
     },
-    "/home": {
-      title: "Create a Quiz — Kuizu",
-      description: "Upload a PDF, PPTX, or type a prompt to generate multiple-choice quizzes with an AI. Edit, save, and share your quiz instantly.",
-      robots: "index, follow",
-      schemaType: "home",
-    },
     "/quiz": {
       title: "Playing Quiz — Kuizu",
       description: "Answer questions, track your streak, and see your score.",
@@ -691,6 +687,7 @@ export default function App() {
   });
 
   return (
+    <AudioProvider>
     <>
       <Helmet>
         <title>{meta.title}</title>
@@ -746,6 +743,7 @@ export default function App() {
                     source: "discover",
                     ownerId: post.user_id,
                     postId: post.id,
+                    shareCode: post.share_code,
                   });
                   navigate("/preview");
                 }}
@@ -756,29 +754,7 @@ export default function App() {
             </MainLayout>
           }
         />
-        <Route
-          path="/home"
-          element={
-            <HomeRoute
-              user={user}
-              quiz={quiz}
-              setQuiz={setQuiz}
-              authBooting={authBooting}
-              isProfileMenuOpen={isProfileMenuOpen}
-              profileMenuRef={profileMenuRef}
-              username={username}
-              profileInitial={profileInitial}
-              onProfileMenuToggle={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-              onAuthOpen={() => setIsAuthOpen(true)}
-              onLogout={handleLogout}
-              onPlay={handlePlay}
-              onHost={handleHostStart}
-              onSaveGame={handleSaveGame}
-              onPostDiscover={handlePostDiscover}
-              navigate={navigate}
-            />
-          }
-        />
+
         <Route
           path="/create"
           element={
@@ -828,7 +804,22 @@ export default function App() {
         />
         <Route
           path="/join/:pin?"
-          element={<JoinRoute onExit={() => navigate(quizSource)} />}
+          element={
+            <MainLayout
+              user={user}
+              isProfileMenuOpen={isProfileMenuOpen}
+              profileMenuRef={profileMenuRef}
+              username={username}
+              profileInitial={profileInitial}
+              authBooting={authBooting}
+              onProfileMenuToggle={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              onAuthOpen={() => setIsAuthOpen(true)}
+              onLogout={handleLogout}
+              navigate={navigate}
+            >
+              <JoinRoute onExit={() => navigate(quizSource)} />
+            </MainLayout>
+          }
         />
         <Route
           path="/play/:id"
@@ -863,6 +854,7 @@ export default function App() {
               navigate={navigate}
             >
               <MyGames
+                user={user}
                 username={username}
                 onPlay={(game) => {
                   setPreviewData({
@@ -873,6 +865,7 @@ export default function App() {
                     source: "mygames",
                     ownerId: user?.id,
                     gameId: game.id,
+                    shareCode: game.share_code,
                   });
                   navigate("/preview");
                 }}
@@ -886,6 +879,7 @@ export default function App() {
                     source: "mygames",
                     ownerId: user?.id,
                     gameId: game.id,
+                    shareCode: game.share_code,
                   });
                   navigate("/preview");
                 }}
@@ -961,11 +955,12 @@ export default function App() {
         />
       )}
     </>
+    </AudioProvider>
   );
 }
 
 // ──────────────────────────────────────────────
-// LandingRoute & HomeRoute
+// LandingRoute
 // ──────────────────────────────────────────────
 
 function LoadingScreen() {
@@ -993,39 +988,6 @@ function LandingRoute({ user, authBooting, onAuthOpen, onLogout, navigate }) {
   );
 }
 
-function HomeRoute({
-  user, quiz, setQuiz, authBooting, isProfileMenuOpen, profileMenuRef,
-  username, profileInitial, onProfileMenuToggle, onAuthOpen, onLogout,
-  onPlay, onHost, onSaveGame, onPostDiscover, navigate,
-}) {
-  if (authBooting) return <LoadingScreen />;
-
-  return (
-    <MainLayout
-      user={user}
-      isProfileMenuOpen={isProfileMenuOpen}
-      profileMenuRef={profileMenuRef}
-      username={username}
-      profileInitial={profileInitial}
-      authBooting={authBooting}
-      onProfileMenuToggle={onProfileMenuToggle}
-      onAuthOpen={onAuthOpen}
-      onLogout={onLogout}
-      navigate={navigate}
-    >
-      <CreateDashboard
-        user={user}
-        initialQuiz={quiz}
-        onPlay={(q) => { setQuiz(q); onPlay(q); }}
-        onHost={(q) => { setQuiz(q); onHost(q); }}
-        onSaveGame={onSaveGame}
-        onPostDiscover={onPostDiscover}
-        onRequireAuth={onAuthOpen}
-      />
-    </MainLayout>
-  );
-}
-
 // ──────────────────────────────────────────────
 // MainLayout — nav + header
 // ──────────────────────────────────────────────
@@ -1037,6 +999,7 @@ function MainLayout({
   const { colors: COLORS } = useTheme();
   const [showAbout, setShowAbout] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  const [musicPanelOpen, setMusicPanelOpen] = useState(false);
   const location = useLocation();
   const path = location.pathname;
 
@@ -1060,9 +1023,18 @@ function MainLayout({
         </div>
         {navItem("Discover", "/", path === "/" || path === "/discover")}
         {navItem("Create", "/create", path === "/create")}
-        {navItem("Home", "/home", path === "/home")}
         {navItem("My Games", "/games", path === "/games")}
         {navItem("Join a Game", "/join", path.startsWith("/join"))}
+        <button
+          className="nav-drawer-item"
+          onClick={() => setMusicPanelOpen(v => !v)}
+          style={{ color: musicPanelOpen ? COLORS.sageDark : undefined }}
+        >Music &#9835;</button>
+        {musicPanelOpen && (
+          <div style={{ padding: "4px 8px 8px 8px" }}>
+            <AudioPlayer onClose={() => setMusicPanelOpen(false)} />
+          </div>
+        )}
         <div className="nav-drawer-section">Account</div>
         {!authBooting && !user && (
           <button className="nav-drawer-item" onClick={() => { onAuthOpen(); closeNav(); }}>Sign In</button>
@@ -1083,6 +1055,9 @@ function MainLayout({
           className="nav-drawer-item"
           onClick={() => { setShowAbout(true); closeNav(); }}
         >About</button>
+        <div style={{ padding: "0 0 4px" }}>
+          <ShareCodeEntry user={user} onRequireAuth={() => { onAuthOpen(); closeNav(); }} />
+        </div>
         <div style={{ marginTop: "auto", padding: "16px 0 0", borderTop: `1px solid ${COLORS.border}`, display: "flex", justifyContent: "center" }}>
           <ThemeToggle />
         </div>
@@ -1100,6 +1075,17 @@ function MainLayout({
       >
         {navOpen ? "\u2715" : "\u2630"}
       </button>
+      <div
+        style={{
+          position: "fixed",
+          top: 16,
+          left: navOpen ? 348 : 68,
+          zIndex: 51,
+          transition: "left 0.25s ease",
+        }}
+      >
+        <AudioPlayer compact />
+      </div>
       {drawer}
       {children}
       {showAbout && <TypewriterOverlay onDismiss={() => setShowAbout(false)} />}
@@ -1158,14 +1144,14 @@ function TypewriterOverlay({ onDismiss }) {
       }}
     >
       <div style={{
-        whiteSpace: "pre-wrap", color: COLORS.cream, fontSize: "clamp(13px, 2.8vmin, 22px)",
-        fontFamily: "monospace", textAlign: "left", width: "100%", maxWidth: "800px",
-        lineHeight: 1.7, overflowY: "auto", maxHeight: "80vh"
+        whiteSpace: "pre-wrap", color: "#F1F2F6", fontSize: "clamp(13px, 2.8vmin, 22px)",
+        fontFamily: FONTS.body, textAlign: "left", width: "100%", maxWidth: "800px",
+        lineHeight: 1.7, letterSpacing: "0.02em", overflowY: "auto", maxHeight: "80vh"
       }}>
         {displayed}
         <span style={{ animation: "cursorBlink 1s step-end infinite" }}>_</span>
       </div>
-      <p style={{ marginTop: "clamp(12px, 3vmin, 28px)", color: "rgba(251,246,233,0.5)", fontSize: 13, fontFamily: "monospace" }}>
+      <p style={{ marginTop: "clamp(12px, 3vmin, 28px)", color: "rgba(241,242,246,0.45)", fontSize: 13, fontFamily: FONTS.body }}>
         Tap anywhere to close
       </p>
       <style>{`

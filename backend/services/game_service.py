@@ -1,4 +1,5 @@
 import json
+import secrets
 import sqlite3
 from datetime import UTC, datetime
 from threading import Lock
@@ -15,6 +16,19 @@ def _connect() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def _generate_share_code(conn: sqlite3.Connection) -> str:
+    alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+    for _ in range(20):
+        code = "".join(secrets.choice(alphabet) for _ in range(8))
+        exists = conn.execute(
+            "SELECT 1 FROM games WHERE share_code = ? UNION ALL SELECT 1 FROM discover_posts WHERE share_code = ? LIMIT 1",
+            (code, code),
+        ).fetchone()
+        if not exists:
+            return code
+    raise RuntimeError("Failed to generate unique share code after 20 attempts")
 
 
 def validate_quiz_payload(quiz: dict) -> None:
@@ -44,18 +58,19 @@ def create_game(user_id: int, title: str, category: str, quiz: dict) -> dict[str
     with _DB_LOCK:
         conn = _connect()
         try:
+            share_code = _generate_share_code(conn)
             cursor = conn.execute(
                 """
-                INSERT INTO games (user_id, title, category, quiz_json, questions_count, plays, pinned, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?)
+                INSERT INTO games (user_id, title, category, quiz_json, questions_count, plays, pinned, share_code, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?, ?)
                 """,
-                (user_id, title.strip(), category.strip(), json.dumps(quiz), questions_count, now, now),
+                (user_id, title.strip(), category.strip(), json.dumps(quiz), questions_count, share_code, now, now),
             )
             conn.commit()
             game_id = cursor.lastrowid
             row = conn.execute(
                 """
-                SELECT id, title, category, plays, pinned, updated_at, questions_count, quiz_json
+                SELECT id, title, category, plays, pinned, updated_at, questions_count, share_code, quiz_json
                 FROM games
                 WHERE id = ? AND user_id = ?
                 """,
@@ -74,7 +89,7 @@ def list_games(user_id: int) -> list[dict[str, Any]]:
         try:
             rows = conn.execute(
                 """
-                SELECT id, title, category, plays, pinned, updated_at, questions_count, quiz_json
+                SELECT id, title, category, plays, pinned, updated_at, questions_count, share_code, quiz_json
                 FROM games
                 WHERE user_id = ?
                 ORDER BY pinned DESC, updated_at DESC
@@ -115,7 +130,7 @@ def set_game_pinned(user_id: int, game_id: int, pinned: bool) -> dict[str, Any]:
 
             row = conn.execute(
                 """
-                SELECT id, title, category, plays, pinned, updated_at, questions_count, quiz_json
+                SELECT id, title, category, plays, pinned, updated_at, questions_count, share_code, quiz_json
                 FROM games
                 WHERE id = ? AND user_id = ?
                 """,
@@ -148,7 +163,7 @@ def update_game_category(user_id: int, game_id: int, category: str) -> dict[str,
 
             row = conn.execute(
                 """
-                SELECT id, title, category, plays, pinned, updated_at, questions_count, quiz_json
+                SELECT id, title, category, plays, pinned, updated_at, questions_count, share_code, quiz_json
                 FROM games
                 WHERE id = ? AND user_id = ?
                 """,
@@ -187,5 +202,6 @@ def _row_to_game(row: sqlite3.Row) -> dict[str, Any]:
         "pinned": bool(row["pinned"]),
         "updated_at": row["updated_at"],
         "questions_count": int(row["questions_count"]),
+        "share_code": row["share_code"] if "share_code" in row.keys() else None,
         "quiz": json.loads(row["quiz_json"]),
     }

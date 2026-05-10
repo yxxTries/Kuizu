@@ -21,87 +21,10 @@ function getCategoryColor(cat) {
   return CATEGORY_COLORS[cat] || CATEGORY_COLORS.default;
 }
 
-// ─── Quick question pool for seed quizzes ───
-const SEED_QUESTIONS = [
-  { question: "What year did the Berlin Wall fall?", choices: ["1987","1988","1989","1990"], correct_index: 2 },
-  { question: "Which planet is closest to the Sun?", choices: ["Venus","Earth","Mercury","Mars"], correct_index: 2 },
-  { question: "What is the capital of Japan?", choices: ["Seoul","Beijing","Bangkok","Tokyo"], correct_index: 3 },
-  { question: "How many continents are there?", choices: ["5","6","7","8"], correct_index: 2 },
-  { question: "Which element has symbol 'O'?", choices: ["Osmium","Oxygen","Gold","Oganesson"], correct_index: 1 },
-  { question: "Who painted the Mona Lisa?", choices: ["Michelangelo","Raphael","Donatello","Leonardo da Vinci"], correct_index: 3 },
-  { question: "What is the speed of light (~km/s)?", choices: ["150,000","300,000","450,000","600,000"], correct_index: 1 },
-  { question: "Which ocean is largest?", choices: ["Atlantic","Indian","Arctic","Pacific"], correct_index: 3 },
-  { question: "How many hearts does an octopus have?", choices: ["1","2","3","4"], correct_index: 2 },
-  { question: "What does HTTP stand for?", choices: ["HyperText Transfer Protocol","High Tech Transfer Platform","Hyper Transfer Text Protocol","Home Tool Transfer Page"], correct_index: 0 },
-  { question: "Which vitamin is produced by sunlight?", choices: ["Vitamin A","Vitamin B","Vitamin C","Vitamin D"], correct_index: 3 },
-  { question: "What year did WWII end?", choices: ["1943","1944","1945","1946"], correct_index: 2 },
-  { question: "Currency of the UK?", choices: ["Euro","Dollar","Pound Sterling","Yen"], correct_index: 2 },
-  { question: "Hardest natural substance?", choices: ["Quartz","Topaz","Diamond","Corundum"], correct_index: 2 },
-  { question: "What gas is most in Earth's atmosphere?", choices: ["Oxygen","Hydrogen","Nitrogen","CO2"], correct_index: 2 },
-  { question: "Largest planet in solar system?", choices: ["Earth","Jupiter","Saturn","Mars"], correct_index: 1 },
-  { question: "Capital of France?", choices: ["London","Berlin","Paris","Madrid"], correct_index: 2 },
-  { question: "Language with most native speakers?", choices: ["English","Spanish","Mandarin Chinese","Hindi"], correct_index: 2 },
-  { question: "Boiling point of water (°C)?", choices: ["90","100","110","120"], correct_index: 1 },
-  { question: "Smallest bone in human body?", choices: ["Femur","Stapes","Radius","Phalanx"], correct_index: 1 },
-];
-
-function pickSeedQuestions(count) {
-  return shuffle(SEED_QUESTIONS).slice(0, Math.min(count, SEED_QUESTIONS.length));
-}
-
-// ─── Demo Seed Quizzes ───
-const SEED_QUIZZES = [
-  { title: "The Solar System", category: "Science", difficulty: "Easy", author: "Made By Kuizu", estimated_time: "8 min", questionCount: 8, timer: 15 },
-  { title: "Human Anatomy 101", category: "Science", difficulty: "Medium", author: "Made By Kuizu", estimated_time: "12 min", questionCount: 12, timer: 20 },
-  { title: "World War II", category: "History", difficulty: "Medium", author: "Made By Kuizu", estimated_time: "10 min", questionCount: 10, timer: 20 },
-  { title: "Ancient Civilizations", category: "History", difficulty: "Hard", author: "Made By Kuizu", estimated_time: "15 min", questionCount: 15, timer: 25 },
-  { title: "Algebra Fundamentals", category: "Math", difficulty: "Medium", author: "Made By Kuizu", estimated_time: "10 min", questionCount: 10, timer: 20 },
-  { title: "Calculus Concepts", category: "Math", difficulty: "Hard", author: "Made By Kuizu", estimated_time: "8 min", questionCount: 8, timer: 30 },
-  { title: "Gaming Trivia", category: "Gaming", difficulty: "Easy", author: "Made By Kuizu", estimated_time: "15 min", questionCount: 15, timer: 10 },
-  { title: "Retro Games", category: "Gaming", difficulty: "Medium", author: "Made By Kuizu", estimated_time: "10 min", questionCount: 10, timer: 15 },
-  { title: "Spanish Vocabulary", category: "Language", difficulty: "Easy", author: "Made By Kuizu", estimated_time: "20 min", questionCount: 20, timer: 15 },
-  { title: "French Phrases", category: "Language", difficulty: "Medium", author: "Made By Kuizu", estimated_time: "12 min", questionCount: 12, timer: 15 },
-  { title: "Marketing 101", category: "Business", difficulty: "Medium", author: "Made By Kuizu", estimated_time: "10 min", questionCount: 10, timer: 20 },
-  { title: "Startup Basics", category: "Business", difficulty: "Easy", author: "Made By Kuizu", estimated_time: "8 min", questionCount: 8, timer: 15 },
-  { title: "General Knowledge", category: "General", difficulty: "Easy", author: "Made By Kuizu", estimated_time: "15 min", questionCount: 15, timer: 15 },
-  { title: "Fun Facts", category: "General", difficulty: "Easy", author: "Made By Kuizu", estimated_time: "10 min", questionCount: 10, timer: 10 },
-  { title: "Philosophy Basics", category: "Other", difficulty: "Hard", author: "Made By Kuizu", estimated_time: "10 min", questionCount: 10, timer: 25 },
-];
-
-function makeSeedPost(seed, idx) {
-  const questions = pickSeedQuestions(seed.questionCount);
-  return {
-    id: -1000 - idx,
-    user_id: -1,
-    title: seed.title,
-    category: seed.category,
-    author: seed.author,
-    plays: Math.floor(Math.random() * 500) + 10,
-    rating: (Math.random() * 2 + 3).toFixed(1),
-    difficulty: seed.difficulty,
-    estimated_time: seed.estimated_time,
-    created_at: new Date(Date.now() - Math.random() * 30 * 86400000).toISOString(),
-    updated_at: new Date().toISOString(),
-    questions_count: seed.questionCount,
-    quiz: {
-      questions,
-      timeControl: { enabled: true, mode: "per_question", secondsPerQuestion: seed.timer },
-    },
-    isSeed: true,
-  };
-}
-
 const CATEGORIES = ["Science", "History", "Math", "Gaming", "Language", "Business", "General", "Other"];
 
-// ─── Utility ───
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
-  return a;
-}
-
 // ─── HeroBanner ───
-function HeroBanner({ post, onPlay, onFeature, onRemove, styles, COLORS }) {
+function HeroBanner({ post, onPlay, styles, COLORS }) {
   if (!post) return null;
   const catColor = getCategoryColor(post.category);
   const title = post.title || "Untitled";
@@ -109,7 +32,7 @@ function HeroBanner({ post, onPlay, onFeature, onRemove, styles, COLORS }) {
     <div style={{ ...styles.hero, background: catColor.gradient }}>
       <div style={styles.heroOverlay} />
       <div style={styles.heroContent}>
-        <span style={{ ...styles.heroKicker, background: "rgba(255,255,255,0.15)", color: "#FFFFFF", border: "1px solid rgba(255,255,255,0.25)" }}>FEATURED</span>
+        <span style={{ ...styles.heroKicker, background: "rgba(0,0,0,0.4)", color: "#FFFFFF" }}>FEATURED</span>
         <h1 style={styles.heroTitle}>{title}</h1>
         <div style={styles.heroMeta}>
           {post.author && <span style={styles.heroMetaItem}>{post.author}</span>}
@@ -120,7 +43,6 @@ function HeroBanner({ post, onPlay, onFeature, onRemove, styles, COLORS }) {
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
           <button className="wiz-arcade" style={styles.heroBtn} onClick={(e) => { e.stopPropagation(); onPlay(post); }}>Play Now</button>
-          <button className="wiz-arcade" style={styles.heroFeatureBtn} onClick={(e) => { e.stopPropagation(); onFeature(post); }}>Feature</button>
         </div>
       </div>
     </div>
@@ -128,12 +50,12 @@ function HeroBanner({ post, onPlay, onFeature, onRemove, styles, COLORS }) {
 }
 
 // ─── QuizCardLarge ───
-function QuizCardLarge({ post, onPlay, onFeature, onRemove, styles, COLORS }) {
+function QuizCardLarge({ post, onPlay, styles, COLORS }) {
   const catColor = getCategoryColor(post.category);
   const title = post.title || "Untitled";
   const author = post.author || "Unknown";
   return (
-    <div style={styles.cardLarge} onClick={() => onPlay(post)} className="wiz-arcade card-overlay-show">
+    <div style={styles.cardLarge} onClick={() => onPlay(post)} className="wiz-arcade">
       <div style={{ ...styles.cardLargeTop, background: catColor.gradient }}>
         <span style={styles.cardLargeCategory}>{post.category}</span>
       </div>
@@ -145,27 +67,21 @@ function QuizCardLarge({ post, onPlay, onFeature, onRemove, styles, COLORS }) {
           {post.difficulty && <span>{post.difficulty}</span>}
         </div>
         <div style={styles.cardLargeFooter}>
-          <span style={{ fontSize: 12, color: COLORS.inkMuted, fontWeight: 600 }}>{typeof post.plays === "number" ? `${post.plays} plays` : ""}</span>
+          <span style={{ fontSize: 12, color: COLORS.inkSoft, fontWeight: 600 }}>{typeof post.plays === "number" ? `${post.plays} plays` : ""}</span>
           <button className="wiz-arcade" style={styles.cardPlayBtn} onClick={(e) => { e.stopPropagation(); onPlay(post); }}>Play</button>
         </div>
-      </div>
-      <div className="card-overlay" style={styles.cardOverlay}>
-        <button className="wiz-arcade" style={styles.cardMiniBtn} onClick={(e) => { e.stopPropagation(); onFeature(post); }} title="Feature">*</button>
       </div>
     </div>
   );
 }
 
-function QuizCardCompact({ post, onPlay, onFeature, onRemove, styles, COLORS }) {
+function QuizCardCompact({ post, onPlay, styles, COLORS }) {
   const catColor = getCategoryColor(post.category);
   const title = post.title || "Untitled";
   return (
     <div style={{ ...styles.cardCompact, borderLeft: `4px solid ${catColor.accent}` }} onClick={() => onPlay(post)} className="wiz-arcade">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
         <span style={{ ...styles.cardCompactCat, color: catColor.accent }}>{post.category}</span>
-        <div style={{ display: "flex", gap: 4 }}>
-          <button className="wiz-arcade" style={styles.cardMiniBtn} onClick={(e) => { e.stopPropagation(); onFeature(post); }} title="Feature">*</button>
-        </div>
       </div>
       <h4 style={styles.cardCompactTitle}>{title}</h4>
       <div style={styles.cardCompactMeta}>
@@ -178,7 +94,7 @@ function QuizCardCompact({ post, onPlay, onFeature, onRemove, styles, COLORS }) 
 }
 
 // ─── SectionRow ───
-function SectionRow({ title, subtitle, posts, onPlay, onFeature, onRemove, renderCard, styles, COLORS }) {
+function SectionRow({ title, subtitle, posts, onPlay, renderCard, styles, COLORS }) {
   if (!posts || posts.length === 0) return null;
   return (
     <div style={styles.section}>
@@ -191,11 +107,11 @@ function SectionRow({ title, subtitle, posts, onPlay, onFeature, onRemove, rende
       <div className="discover-scroll" style={styles.scrollRow}>
         {posts.map((post) => (
           <div key={post.id} style={{ flexShrink: 0 }}>
-            {renderCard(post, onPlay, onFeature, onRemove, styles, COLORS)}
+            {renderCard(post, onPlay, styles, COLORS)}
           </div>
         ))}
         {posts.length <= 2 && (
-          <div style={{ flexShrink: 0, minWidth: 80, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", color: COLORS.inkMuted, opacity: 0.4, gap: 8 }}>
+          <div style={{ flexShrink: 0, minWidth: 80, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", color: COLORS.inkSoft, opacity: 0.6, gap: 8 }}>
             <span style={{ fontSize: 32 }}>{title === "Continue Learning" ? "~" : title === "Popular" ? "*" : "~"}</span>
             <span style={{ fontSize: 13, fontWeight: 600, fontFamily: FONTS.display }}>More coming soon</span>
           </div>
@@ -273,7 +189,6 @@ export default function Discover({ onPlay, user, onRequireAuth, onCreate }) {
   const [editingPost, setEditingPost] = useState(null);
 
   const [heroPost, setHeroPost] = useState(null);
-  const [featuredId, setFeaturedId] = useState(null);
 
   const loggedIn = Boolean(user);
 
@@ -281,21 +196,13 @@ export default function Discover({ onPlay, user, onRequireAuth, onCreate }) {
   const fetchPosts = useCallback(async () => {
     try {
       const payload = await getDiscoverPosts();
-      const realPosts = Array.isArray(payload?.posts) ? payload.posts : [];
-      const seedPosts = SEED_QUIZZES.map((seed, i) => makeSeedPost(seed, i));
-      const allPosts = [...realPosts, ...seedPosts];
+      const allPosts = Array.isArray(payload?.posts) ? payload.posts : [];
       setPosts(allPosts);
       setError("");
-      // Pick featured or random hero
-      const featured = featuredId ? allPosts.find(p => p.id === featuredId) : null;
-      const nonSeed = allPosts.filter(p => !p.isSeed);
-      const pool = nonSeed.length > 0 ? nonSeed : allPosts;
-      setHeroPost(featured || pool[Math.floor(Math.random() * pool.length)]);
+      setHeroPost(allPosts.length > 0 ? allPosts[Math.floor(Math.random() * allPosts.length)] : null);
     } catch (e) {
-      // Fallback to seed-only
-      const seedOnly = SEED_QUIZZES.map((seed, i) => makeSeedPost(seed, i));
-      setPosts(seedOnly);
-      setHeroPost(seedOnly[Math.floor(Math.random() * seedOnly.length)]);
+      setPosts([]);
+      setHeroPost(null);
       setError("");
     } finally {
       setLoading(false);
@@ -316,7 +223,7 @@ export default function Discover({ onPlay, user, onRequireAuth, onCreate }) {
   const allPosts = useMemo(() => {
     let filtered = posts;
     if (showMyPosts && user) {
-      filtered = filtered.filter(p => !p.isSeed && p.user_id === user.id);
+      filtered = filtered.filter(p => p.user_id === user.id);
     }
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -351,7 +258,7 @@ export default function Discover({ onPlay, user, onRequireAuth, onCreate }) {
   const continuePosts = useMemo(() => {
     if (!loggedIn || myGames.length === 0) return [];
     const savedCats = new Set(myGames.map(g => g.category).filter(Boolean));
-    return allPosts.filter(p => savedCats.has(p.category) && !p.isSeed).slice(0, 8);
+    return allPosts.filter(p => savedCats.has(p.category)).slice(0, 8);
   }, [allPosts, myGames, loggedIn]);
 
   const [populatedCats, setPopulatedCats] = useState([]);
@@ -365,15 +272,9 @@ export default function Discover({ onPlay, user, onRequireAuth, onCreate }) {
     onPlay(post);
   };
 
-  const handleFeature = (post) => {
-    setFeaturedId(post.id);
-    setHeroPost(post);
-  };
-
   const handleRemove = (post) => {
     setPosts(prev => prev.filter(p => p.id !== post.id));
     if (heroPost?.id === post.id) setHeroPost(null);
-    if (featuredId === post.id) setFeaturedId(null);
   };
 
   const handleDelete = async (postId) => {
@@ -408,7 +309,6 @@ export default function Discover({ onPlay, user, onRequireAuth, onCreate }) {
         .discover-scroll::-webkit-scrollbar-track { background: transparent; }
         .discover-scroll::-webkit-scrollbar-thumb { background: ${COLORS.border}; border-radius: 2px; }
         .discover-scroll { scrollbar-width: thin; scrollbar-color: ${COLORS.border} transparent; }
-        .card-overlay-show:hover .card-overlay, .card-overlay-show:focus-within .card-overlay { opacity: 1 !important; }
         @media (max-width: 600px) {
           .hero-title { font-size: clamp(24px, 6vw, 36px) !important; }
         }
@@ -440,88 +340,89 @@ export default function Discover({ onPlay, user, onRequireAuth, onCreate }) {
         COLORS={COLORS}
       />
 
-      {/* Hero */}
-      <HeroBanner post={heroPost} onPlay={handlePlay} onFeature={handleFeature} onRemove={handleRemove} styles={styles} COLORS={COLORS} />
-
-      {/* Popular */}
-      {selectedGenre === "All" && !showMyPosts && (
-        <SectionRow
-          title="Popular"
-          subtitle="Most played quizzes"
-          posts={popularPosts}
-          onPlay={handlePlay}
-          onFeature={handleFeature}
-          onRemove={handleRemove}
-          renderCard={(post, op, of, or, st, c) => <QuizCardLarge post={post} onPlay={op} onFeature={of} onRemove={or} styles={st} COLORS={c} />}
-          styles={styles}
-          COLORS={COLORS}
-        />
-      )}
-
-      {/* Continue Learning */}
-      {selectedGenre === "All" && !showMyPosts && continuePosts.length > 0 && (
-        <SectionRow
-          title="Continue Learning"
-          subtitle="Based on your saved quizzes"
-          posts={continuePosts}
-          onPlay={handlePlay}
-          onFeature={handleFeature}
-          onRemove={handleRemove}
-          renderCard={(post, op, of, or, st, c) => <QuizCardLarge post={post} onPlay={op} onFeature={of} onRemove={or} styles={st} COLORS={c} />}
-          styles={styles}
-          COLORS={COLORS}
-        />
-      )}
-
-      {/* New Arrivals */}
-      {selectedGenre === "All" && !showMyPosts && (
-        <SectionRow
-          title="New Arrivals"
-          subtitle="Freshly added quizzes"
-          posts={newestPosts}
-          onPlay={handlePlay}
-          onFeature={handleFeature}
-          onRemove={handleRemove}
-          renderCard={(post, op, of, or, st, c) => <QuizCardLarge post={post} onPlay={op} onFeature={of} onRemove={or} styles={st} COLORS={c} />}
-          styles={styles}
-          COLORS={COLORS}
-        />
-      )}
-
-      {/* Genre Rows */}
-      {selectedGenre === "All" ? (
-        populatedCats.map(cat => (
-          <SectionRow
-            key={cat}
-            title={cat}
-            posts={postsByCategory[cat]}
-            onPlay={handlePlay}
-          onFeature={handleFeature}
-          onRemove={handleRemove}
-            renderCard={(post, op, of, or, st, c) => <QuizCardCompact post={post} onPlay={op} onFeature={of} onRemove={or} styles={st} COLORS={c} />}
-            styles={styles}
-            COLORS={COLORS}
-          />
-        ))
-      ) : (
-        <SectionRow
-          title={selectedGenre}
-          posts={postsByCategory[selectedGenre] || []}
-          onPlay={handlePlay}
-          onFeature={handleFeature}
-          onRemove={handleRemove}
-          renderCard={(post, op, of, or, st, c) => <QuizCardLarge post={post} onPlay={op} onFeature={of} onRemove={or} styles={st} COLORS={c} />}
-          styles={styles}
-          COLORS={COLORS}
-        />
-      )}
-
-      {allPosts.length === 0 && !loading && (
-        <div style={styles.emptyState}>
-          <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}>--</div>
-          <h3 style={{ fontFamily: FONTS.display, fontSize: 22, fontWeight: 700, margin: "0 0 8px" }}>No quizzes found</h3>
-          <p style={{ color: COLORS.inkMuted, margin: 0 }}>{search ? "Try a different search term." : showMyPosts ? "You haven't posted any quizzes yet." : "Be the first to share a quiz!"}</p>
+      {showMyPosts && !loggedIn ? (
+        <div style={styles.authPrompt}>
+          <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}></div>
+          <h2 style={styles.authTitle}>Sign in to view your posts</h2>
+          <p style={styles.authText}>You need to be signed in to see your published quizzes.</p>
+          <button type="button" className="wiz-arcade" style={styles.authBtn} onClick={onRequireAuth}>Sign In</button>
         </div>
+      ) : (
+        <>
+          {/* Hero */}
+          <HeroBanner post={heroPost} onPlay={handlePlay} styles={styles} COLORS={COLORS} />
+
+          {/* Popular */}
+          {selectedGenre === "All" && !showMyPosts && (
+            <SectionRow
+              title="Popular"
+              subtitle="Most played quizzes"
+              posts={popularPosts}
+              onPlay={handlePlay}
+              renderCard={(post, op, st, c) => <QuizCardLarge post={post} onPlay={op} styles={st} COLORS={c} />}
+              styles={styles}
+              COLORS={COLORS}
+            />
+          )}
+
+          {/* Continue Learning */}
+          {selectedGenre === "All" && !showMyPosts && continuePosts.length > 0 && (
+            <SectionRow
+              title="Continue Learning"
+              subtitle="Based on your saved quizzes"
+              posts={continuePosts}
+              onPlay={handlePlay}
+              renderCard={(post, op, st, c) => <QuizCardLarge post={post} onPlay={op} styles={st} COLORS={c} />}
+              styles={styles}
+              COLORS={COLORS}
+            />
+          )}
+
+          {/* New Arrivals */}
+          {selectedGenre === "All" && !showMyPosts && (
+            <SectionRow
+              title="New Arrivals"
+              subtitle="Freshly added quizzes"
+              posts={newestPosts}
+              onPlay={handlePlay}
+              renderCard={(post, op, st, c) => <QuizCardLarge post={post} onPlay={op} styles={st} COLORS={c} />}
+              styles={styles}
+              COLORS={COLORS}
+            />
+          )}
+
+          {/* Genre Rows */}
+          {selectedGenre === "All" ? (
+            populatedCats.map(cat => (
+              <SectionRow
+                key={cat}
+                title={cat}
+                posts={postsByCategory[cat]}
+                onPlay={handlePlay}
+                renderCard={(post, op, st, c) => <QuizCardCompact post={post} onPlay={op} styles={st} COLORS={c} />}
+                styles={styles}
+                COLORS={COLORS}
+              />
+            ))
+          ) : (
+            <SectionRow
+              title={selectedGenre}
+              posts={postsByCategory[selectedGenre] || []}
+              onPlay={handlePlay}
+              renderCard={(post, op, st, c) => <QuizCardLarge post={post} onPlay={op} styles={st} COLORS={c} />}
+              styles={styles}
+              COLORS={COLORS}
+            />
+          )}
+
+          {allPosts.length === 0 && !loading && (
+            <div style={styles.emptyState}>
+              <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}>--</div>
+              <h3 style={{ fontFamily: FONTS.display, fontSize: 22, fontWeight: 700, margin: "0 0 8px" }}>No quizzes found</h3>
+              <p style={{ color: COLORS.inkMuted, margin: 0 }}>{search ? "Try a different search term." : "Be the first to share a quiz!"}</p>
+            </div>
+          )}
+        </>
       )}
 
       <EditMetaModal
@@ -575,7 +476,8 @@ const buildStyles = (COLORS) => ({
   searchIcon: {
     fontSize: 16,
     marginRight: 10,
-    opacity: 0.5,
+    color: COLORS.inkSoft,
+    opacity: 0.75,
   },
   searchInput: {
     flex: 1,
@@ -725,7 +627,7 @@ const buildStyles = (COLORS) => ({
     fontFamily: FONTS.body,
   },
   heroBtn: {
-    background: "#FFFFFF",
+    background: COLORS.cream,
     color: COLORS.ink,
     border: "none",
     borderBottom: "4px solid rgba(0,0,0,0.15)",
@@ -740,19 +642,6 @@ const buildStyles = (COLORS) => ({
     boxShadow: "0 5px 0 rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.2)",
     textTransform: "uppercase",
   },
-  heroFeatureBtn: {
-    background: "rgba(255,255,255,0.15)",
-    color: "#FFFFFF",
-    border: "1px solid rgba(255,255,255,0.3)",
-    borderBottom: "3px solid rgba(255,255,255,0.2)",
-    borderRadius: 999,
-    padding: "10px 20px",
-    fontWeight: 700,
-    fontSize: 13,
-    cursor: "pointer",
-    fontFamily: FONTS.display,
-    letterSpacing: 0.5,
-  },
   heroRemoveBtn: {
     background: "rgba(255,80,80,0.2)",
     color: "#FFB3B3",
@@ -766,19 +655,10 @@ const buildStyles = (COLORS) => ({
     fontFamily: FONTS.display,
     letterSpacing: 0.5,
   },
-  cardOverlay: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    display: "flex",
-    gap: 4,
-    opacity: 0,
-    transition: "opacity 0.15s ease",
-  },
   cardMiniBtn: {
-    background: "rgba(255,255,255,0.9)",
+    background: COLORS.creamSoft,
     color: COLORS.inkSoft,
-    border: "1px solid rgba(0,0,0,0.1)",
+    border: `1px solid ${COLORS.border}`,
     borderRadius: 999,
     width: 24,
     height: 24,
@@ -812,8 +692,7 @@ const buildStyles = (COLORS) => ({
     top: 12,
     right: 12,
     zIndex: 3,
-    background: "rgba(255,255,255,0.2)",
-    backdropFilter: "blur(4px)",
+    background: "rgba(0,0,0,0.55)",
     color: "#FFFFFF",
     fontSize: 10,
     fontWeight: 700,
@@ -856,7 +735,7 @@ const buildStyles = (COLORS) => ({
   },
   sectionSub: {
     fontSize: 13,
-    color: COLORS.inkMuted,
+    color: COLORS.inkSoft,
     margin: "2px 0 0",
     fontWeight: 500,
   },
@@ -928,7 +807,7 @@ const buildStyles = (COLORS) => ({
     gap: 10,
     fontSize: 12,
     fontWeight: 600,
-    color: COLORS.inkMuted,
+    color: COLORS.inkSoft,
     flexWrap: "wrap",
     overflow: "hidden",
   },
@@ -943,7 +822,7 @@ const buildStyles = (COLORS) => ({
   },
   cardPlayBtn: {
     background: COLORS.sageDark,
-    color: COLORS.creamSoft,
+    color: COLORS.ink,
     border: "none",
     borderBottom: "3px solid #375031",
     borderRadius: 999,
@@ -1002,7 +881,7 @@ const buildStyles = (COLORS) => ({
     gap: 8,
     fontSize: 11,
     fontWeight: 600,
-    color: COLORS.inkMuted,
+    color: COLORS.inkSoft,
     flexWrap: "wrap",
     overflow: "hidden",
   },
@@ -1050,6 +929,42 @@ const buildStyles = (COLORS) => ({
     textAlign: "center",
     padding: "60px 20px",
     animation: "fadeUp 0.4s ease both",
+  },
+  authPrompt: {
+    textAlign: "center",
+    padding: "60px 20px",
+    animation: "fadeUp 0.4s ease both",
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: 16,
+    background: COLORS.creamSoft,
+    marginTop: 20,
+  },
+  authTitle: {
+    fontFamily: FONTS.display,
+    fontSize: 22,
+    fontWeight: 700,
+    color: COLORS.ink,
+    margin: "0 0 8px",
+  },
+  authText: {
+    color: COLORS.inkMuted,
+    margin: "0 0 16px",
+    fontSize: 14,
+  },
+  authBtn: {
+    background: COLORS.blue,
+    color: COLORS.creamSoft,
+    border: "none",
+    borderBottom: `4px solid ${COLORS.blueDark}`,
+    borderRadius: 999,
+    padding: "12px 32px",
+    fontWeight: 700,
+    fontSize: 14,
+    cursor: "pointer",
+    fontFamily: FONTS.display,
+    letterSpacing: 0.5,
+    boxShadow: `0 5px 0 ${COLORS.blueDark}, 0 6px 16px rgba(90,127,168,0.25)`,
+    transition: "transform 0.12s ease, box-shadow 0.12s ease",
   },
 
   // ── Owner actions (inline in cards - removed, handled via preview page) ──

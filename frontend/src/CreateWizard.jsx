@@ -1,9 +1,11 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { generateQuiz } from "./api.js";
 import { FONTS } from "./theme.js";
 import { useTheme } from "./ThemeContext.jsx";
 import DiscoverPostModal from "./DiscoverPostModal.jsx";
 import SaveGameModal from "./SaveGameModal.jsx";
+import AudioPlayer from "./AudioPlayer.jsx";
 
 const ALLOWED = [".pdf", ".pptx"];
 
@@ -267,6 +269,7 @@ function QuestionCard({
 const TOTAL_STEPS = 4;
 
 export default function CreateWizard({ user, onPlay, onHost, onSaveGame, onPostDiscover, onRequireAuth, onExit, initialQuiz }) {
+  const navigate = useNavigate();
   const { colors: COLORS } = useTheme();
   const styles = useMemo(() => buildStyles(COLORS), [COLORS]);
 
@@ -541,6 +544,15 @@ export default function CreateWizard({ user, onPlay, onHost, onSaveGame, onPostD
           .wizard-step4-grid { grid-template-columns: 1fr !important; }
           .wizard-page { padding-top: 16px !important; padding-bottom: 100px !important; }
         }
+        @media (max-width: 600px) {
+          .wiz-step-nav .wiz-arcade { padding: 10px 16px !important; font-size: 13px !important; }
+          .wiz-step4-actionbar .wiz-arcade { padding: 8px 12px !important; font-size: 12px !important; min-height: 34px !important; }
+          .wiz-step4-actionbar { flex-direction: column !important; align-items: stretch !important; }
+        }
+        @media (max-width: 400px) {
+          .wiz-step-nav { flex-wrap: wrap; gap: 8px; }
+          .wiz-step-nav .wiz-arcade { flex: 1 1 auto; padding: 10px 12px !important; font-size: 12px !important; }
+        }
         .wiz-arcade { outline: none; }
         .wiz-arcade:hover {
           transform: translateY(-3px) !important;
@@ -563,6 +575,7 @@ export default function CreateWizard({ user, onPlay, onHost, onSaveGame, onPostD
 
       {/* ── Step 1: Upload + Prompt ── */}
       {step === 1 && (
+        <>
         <div style={{ ...styles.stepPanel, animation: "fadeUp 0.35s ease both" }}>
           <h2 style={styles.stepTitle}>Create a Quiz</h2>
           <p style={styles.stepSub}>Upload a file, write a prompt — or skip both for random trivia.</p>
@@ -614,10 +627,14 @@ export default function CreateWizard({ user, onPlay, onHost, onSaveGame, onPostD
             </div>
           </div>
           {error && <div style={styles.errorBox}>⚠ {error}</div>}
-          <div style={styles.stepNav}>
+          <div className="wiz-step-nav" style={styles.stepNav}>
             <button style={styles.btnNext} className="wiz-arcade" onClick={handleNext}>Next →</button>
           </div>
         </div>
+        <div style={{ width: "100%", maxWidth: 900, marginTop: 20 }}>
+          <AudioPlayer />
+        </div>
+        </>
       )}
 
       {/* ── Step 2: Question Count ── */}
@@ -645,7 +662,7 @@ export default function CreateWizard({ user, onPlay, onHost, onSaveGame, onPostD
               ))}
             </div>
           </div>
-          <div style={styles.stepNav}>
+          <div className="wiz-step-nav" style={styles.stepNav}>
             <button style={styles.btnBack} className="wiz-arcade" onClick={handleBack}>← Back</button>
             <button style={styles.btnNext} className="wiz-arcade" onClick={handleNext}>Next →</button>
           </div>
@@ -678,7 +695,7 @@ export default function CreateWizard({ user, onPlay, onHost, onSaveGame, onPostD
           <p style={{ fontSize: 12, color: COLORS.inkMuted, marginTop: 16, fontWeight: 600 }}>
             {isUnlimited ? "Unlimited generations available" : `${remaining} of ${RATE_LIMIT.max} generations left`}
           </p>
-          <div style={styles.stepNav}>
+          <div className="wiz-step-nav" style={styles.stepNav}>
             <button style={styles.btnBack} className="wiz-arcade" onClick={handleBack}>← Back</button>
             <button style={{ ...styles.btnNext, ...(rateLimited ? styles.btnDisabled : {}) }} className="wiz-arcade" onClick={handleNext} disabled={rateLimited}>
               {loading ? <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}><span style={styles.spinner} />{progress || "Working…"}</span> : "Generate Quiz"}
@@ -773,7 +790,7 @@ export default function CreateWizard({ user, onPlay, onHost, onSaveGame, onPostD
 
             {/* Right: question list + actions */}
             <div style={{ minWidth: 0 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div className="wiz-step4-actionbar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, gap: 8, flexWrap: "wrap" }}>
                 <button
                   className="wiz-arcade"
                   style={{ background: COLORS.creamWarm, border: `1px solid ${COLORS.border}`, borderBottom: `4px solid ${COLORS.border}`, borderRadius: 999, padding: "9px 18px", cursor: "pointer", fontWeight: 700, fontSize: 13, color: COLORS.ink, fontFamily: FONTS.display, letterSpacing: 0.5, boxShadow: `0 5px 0 ${COLORS.borderSoft}, 0 6px 14px rgba(42,51,64,0.06)`, transition: "transform 0.12s ease, box-shadow 0.12s ease" }}
