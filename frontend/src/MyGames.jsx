@@ -58,7 +58,7 @@ function GameCard({ game, isPinned, onPlay, onTogglePin, onToggleMenu, onEdit, o
           <span>{formatDate(game.updated_at)}</span>
         </div>
 
-        <div style={styles.cardFooter}>
+        <div className="mygames-card-footer" style={styles.cardFooter}>
           <button
             className="wiz-arcade"
             style={styles.playBtn}
@@ -291,9 +291,16 @@ export default function MyGames({ user, username, onPlay, onRequireAuth }) {
           .mygames-header { flex-direction: column-reverse !important; align-items: stretch !important; }
           .mygames-title { font-size: 28px !important; }
         }
+        @media (max-width: 600px) {
+          .mygames-controls-row { flex-direction: column !important; }
+          .mygames-card-footer .wiz-arcade { padding: 6px 8px !important; font-size: 11px !important; }
+        }
         @media (max-width: 520px) {
           .mygames-grid { grid-template-columns: 1fr !important; }
           .mygames-title { font-size: 24px !important; }
+        }
+        @media (max-width: 400px) {
+          .mygames-card-footer .wiz-arcade { padding: 5px 6px !important; font-size: 10px !important; letter-spacing: 0 !important; }
         }
         .mygames-scroll::-webkit-scrollbar { height: 4px; }
         .mygames-scroll::-webkit-scrollbar-track { background: transparent; }
@@ -322,7 +329,7 @@ export default function MyGames({ user, username, onPlay, onRequireAuth }) {
         {user && !authRequired && (
           <>
             <section style={styles.controls}>
-              <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
+              <div className="mygames-controls-row" style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
                 <div style={styles.searchWrap}>
                   <span style={styles.searchIcon}>/</span>
                   <input

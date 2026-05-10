@@ -28,8 +28,10 @@ const buildGlobalStyle = (COLORS) => `
     font-family: ${FONTS.body};
     -webkit-font-smoothing: antialiased;
     transition: background 0.2s ease, color 0.2s ease;
+    overflow-x: hidden;
+    max-width: 100vw;
   }
-  button { font-family: inherit; }
+  button { font-family: inherit; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   input  { font-family: inherit; font-size: max(16px, 1em); color: ${COLORS.ink}; }
   textarea { font-family: inherit; font-size: max(16px, 1em); color: ${COLORS.ink}; }
   select { font-family: inherit; color: ${COLORS.ink}; }
