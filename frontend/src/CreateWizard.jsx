@@ -543,12 +543,19 @@ export default function CreateWizard({ user, onPlay, onHost, onSaveGame, onPostD
           .wizard-step1-grid { grid-template-columns: 1fr !important; }
           .wizard-step4-grid { grid-template-columns: 1fr !important; }
           .wizard-page { padding-top: 16px !important; padding-bottom: 100px !important; }
+          .wiz-step4-sidebar-col { order: 2; position: static !important; }
+          .wiz-step4-main-col { order: 1; }
+          .wiz-step4-page { padding-top: 60px !important; padding-bottom: 100px !important; }
         }
         @media (max-width: 600px) {
           .wiz-step-nav .wiz-arcade { padding: 10px 16px !important; font-size: 13px !important; }
           .wiz-step4-actionbar .wiz-arcade { padding: 8px 12px !important; font-size: 12px !important; min-height: 34px !important; }
           .wiz-step4-actionbar { flex-direction: column !important; align-items: stretch !important; }
           .wiz-timer-grid .wiz-arcade { padding: 10px 14px !important; font-size: 13px !important; min-width: auto !important; }
+        }
+        @media (max-width: 400px) {
+          .wiz-timer-grid .wiz-arcade { padding: 8px 10px !important; font-size: 11px !important; }
+          .wiz-step4-actionbar .wiz-arcade { padding: 7px 10px !important; font-size: 11px !important; }
         }
         @media (max-width: 400px) {
           .wiz-step-nav { flex-wrap: wrap; gap: 8px; }
@@ -707,14 +714,14 @@ export default function CreateWizard({ user, onPlay, onHost, onSaveGame, onPostD
 
       {/* ── Step 4: Preview ── */}
       {step === 4 && (
-        <div style={{ animation: "fadeUp 0.35s ease both", width: "100%", maxWidth: 1280, margin: "0 auto", padding: "0 clamp(16px, 4vw, 32px) 80px" }}>
+        <div className="wiz-step4-page" style={{ animation: "fadeUp 0.35s ease both", width: "100%", maxWidth: 1280, margin: "0 auto", padding: "0 clamp(16px, 4vw, 32px) 80px", overflowX: "hidden" }}>
           {(saveMessage || discoverMessage) && <div style={{ ...styles.errorBox, ...styles.infoBox }}>{saveMessage || discoverMessage}</div>}
           {errorBanner && <div style={styles.errorBox}>⚠ {errorBanner}</div>}
           {error && <div style={styles.errorBox}>⚠ {error}</div>}
 
           <div className="wizard-step4-grid" style={{ display: "grid", gridTemplateColumns: sidebarOpen ? "320px 1fr" : "0px 1fr", gap: 24, transition: "grid-template-columns 0.25s ease" }}>
             {/* Left panel: reprompt + file attach */}
-            <div style={{ ...styles.sidebar, overflow: sidebarOpen ? "visible" : "hidden", padding: sidebarOpen ? 20 : 0, opacity: sidebarOpen ? 1 : 0, transition: "opacity 0.2s ease, padding 0.25s ease" }}>
+            <div className="wiz-step4-sidebar-col" style={{ ...styles.sidebar, overflow: sidebarOpen ? "visible" : "hidden", padding: sidebarOpen ? 20 : 0, opacity: sidebarOpen ? 1 : 0, transition: "opacity 0.2s ease, padding 0.25s ease" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <span style={{ fontSize: 13, fontWeight: 700, color: COLORS.inkSoft, textTransform: "uppercase", letterSpacing: 0.5 }}>Refine</span>
               </div>
@@ -790,7 +797,7 @@ export default function CreateWizard({ user, onPlay, onHost, onSaveGame, onPostD
             </div>
 
             {/* Right: question list + actions */}
-            <div style={{ minWidth: 0 }}>
+            <div className="wiz-step4-main-col" style={{ minWidth: 0 }}>
               <div className="wiz-step4-actionbar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, gap: 8, flexWrap: "wrap" }}>
                 <button
                   className="wiz-arcade"
