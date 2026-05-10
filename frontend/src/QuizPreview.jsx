@@ -59,16 +59,24 @@ export default function QuizPreview({ data, user, onPlay, onHost, onEdit, onDele
           box-shadow: 0 3px 0 ${COLORS.sageDark};
         }
         @media (max-width: 600px) {
+          .preview-page { padding: 56px clamp(12px, 3vw, 16px) 100px !important; overflow-x: hidden; }
+          .preview-title { font-size: 22px !important; line-height: 1.2 !important; margin: 6px 0 4px !important; }
           .preview-actions { flex-wrap: wrap; gap: 6px; }
           .preview-actions .wiz-arcade { padding: 8px 14px !important; font-size: 13px !important; }
-          .preview-meta { flex-wrap: wrap; gap: 6px; }
+          .preview-meta { flex-wrap: wrap; gap: 4px; row-gap: 4px; }
+          .preview-meta-item { font-size: 11px !important; }
+          .preview-share { flex-wrap: wrap; gap: 6px !important; margin-top: 10px !important; }
+          .preview-share code { font-size: 14px !important; letter-spacing: 1px !important; padding: 3px 8px !important; }
           .preview-question-card { padding: 12px 14px !important; }
           .preview-choice { padding: 6px 10px !important; font-size: 12px !important; }
-          .preview-body-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-          .preview-page { padding-top: 60px !important; padding-bottom: 100px !important; }
+          .preview-body-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+          .preview-qnum { padding: 2px 8px !important; font-size: 11px !important; }
+          .preview-qtext { font-size: 14px !important; }
         }
         @media (max-width: 400px) {
+          .preview-title { font-size: 19px !important; }
           .preview-actions .wiz-arcade { padding: 7px 10px !important; font-size: 12px !important; }
+          .preview-question-card { padding: 10px 12px !important; }
         }
         .wiz-arcade { outline: none; }
         .wiz-arcade:hover {
@@ -94,17 +102,17 @@ export default function QuizPreview({ data, user, onPlay, onHost, onEdit, onDele
                 <span style={styles.diffBadge}>{difficulty}</span>
               )}
             </div>
-            <h1 style={styles.title}>{title || "Untitled Quiz"}</h1>
+            <h1 className="preview-title" style={styles.title}>{title || "Untitled Quiz"}</h1>
             <div className="preview-meta" style={styles.metaRow}>
-              {author && <span style={styles.metaItem}>{author}</span>}
-              <span style={styles.metaItem}>{questions_count || questions.length} questions</span>
-              {estimated_time && <span style={styles.metaItem}>{estimated_time}</span>}
-              {timerSeconds && <span style={styles.metaItem}>{timerSeconds}s per question</span>}
-              {typeof plays === "number" && <span style={styles.metaItem}>{plays} plays</span>}
-              {isOwner && <span style={{ ...styles.metaItem, color: COLORS.sageDark, fontWeight: 700 }}>Yours</span>}
+              {author && <span className="preview-meta-item" style={styles.metaItem}>{author}</span>}
+              <span className="preview-meta-item" style={styles.metaItem}>{questions_count || questions.length} questions</span>
+              {estimated_time && <span className="preview-meta-item" style={styles.metaItem}>{estimated_time}</span>}
+              {timerSeconds && <span className="preview-meta-item" style={styles.metaItem}>{timerSeconds}s per question</span>}
+              {typeof plays === "number" && <span className="preview-meta-item" style={styles.metaItem}>{plays} plays</span>}
+              {isOwner && <span className="preview-meta-item" style={{ ...styles.metaItem, color: COLORS.sageDark, fontWeight: 700 }}>Yours</span>}
             </div>
             {shareCode && (
-              <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 8 }}>
+              <div className="preview-share" style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: COLORS.inkMuted, textTransform: "uppercase", letterSpacing: 0.5 }}>Share Code</span>
                 <code
                   onClick={() => {
@@ -188,8 +196,8 @@ export default function QuizPreview({ data, user, onPlay, onHost, onEdit, onDele
           {questions.map((q, i) => (
             <div key={q._id || uid()} className="preview-question-card" style={i > 0 ? { animationDelay: `${i * 0.04}s` } : {}}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: showAnswers ? 8 : 0 }}>
-                <span style={styles.qNum}>Q{i + 1}</span>
-                <p style={styles.qText}>{q.question}</p>
+                <span className="preview-qnum" style={styles.qNum}>Q{i + 1}</span>
+                <p className="preview-qtext" style={styles.qText}>{q.question}</p>
               </div>
               {showAnswers && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8, paddingLeft: 40 }}>
@@ -220,6 +228,7 @@ const buildStyles = (COLORS) => ({
     padding: "40px clamp(16px, 4vw, 40px) 80px",
     maxWidth: 900,
     margin: "0 auto",
+    overflowX: "hidden",
   },
   header: {
     animation: "fadeUp 0.3s ease both",

@@ -12,13 +12,17 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL   = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 GEMINI_URL     = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL   = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions"
+
 MAX_TEXT_CHARS = 4000
 
 PROMPT_TEMPLATE = """# ROLE
 You are an expert quiz designer for school students. Your job is to transform educational content — slide decks, PDFs, or plain text — into engaging, pedagogically sound multiple-choice quizzes that reinforce learning without feeling like a chore.
 
 # CRITICAL RULE
-Never ask for clarification. Always infer everything you need from the content itself and any custom instructions. Generte immediately.
+Never ask for clarification. Always infer everything you need from the content itself and any custom instructions. Generate immediately.
 
 # INPUT
 The user will provide extracted text or a concept description, and may optionally include custom instructions. Use whatever they give you. Infer the rest.
@@ -71,19 +75,14 @@ Document content:
 {document_text}"""
 
 
-def generate_quiz(document_text: str, num_questions: int = 10, num_options: int = 4, custom_instructions: str | None = None) -> dict:
-    num_questions = max(1, min(num_questions, 20))
-    num_options = max(2, min(num_options, 4))
+def _build_prompt(document_text, num_questions, num_options, custom_instructions=None):
     truncated = document_text[:MAX_TEXT_CHARS]
-
     ins_block = ""
     if custom_instructions:
         ins_block = f"\nATTENTION! The user added custom instructions for this quiz:\n>>> {custom_instructions} <<<\nMake absolutely sure to adapt the quiz based on these instructions."
-
     choices_example = ", ".join([f'"Option {chr(65+i)}"' for i in range(num_options)])
     distractor_count = num_options - 1
-
-    prompt = PROMPT_TEMPLATE.format(
+    return PROMPT_TEMPLATE.format(
         num_questions=num_questions,
         num_options=num_options,
         distractor_count=distractor_count,
@@ -91,13 +90,56 @@ def generate_quiz(document_text: str, num_questions: int = 10, num_options: int 
         document_text=truncated,
         custom_instructions=ins_block,
     )
-    raw = _call_gemini(prompt)
-    return _parse_quiz(raw, num_questions, num_options)
 
 
-def _call_gemini(prompt: str) -> str:
+def generate_quiz(document_text: str, num_questions: int = 10, num_options: int = 4, custom_instructions: str | None = None) -> dict:
+    num_questions = max(1, min(num_questions, 20))
+    num_options = max(2, min(num_options, 4))
+
+    prompt = _build_prompt(document_text, num_questions, num_options, custom_instructions)
+
+    result = {"questions": []}
+    gemini_failed = False
+
+    # ── Try Gemini first ──
+    try:
+        raw = _call_gemini(prompt, num_questions)
+        result = _parse_quiz(raw, num_questions, num_options)
+    except Exception:
+        gemini_failed = True
+        result = {"questions": []}
+
+    valid_count = len(result["questions"])
+
+    # ── Groq fallback if Gemini didn't return enough ──
+    if valid_count < num_questions and GROQ_API_KEY:
+        needed = num_questions - valid_count
+        if gemini_failed:
+            needed = num_questions
+
+        remaining_prompt = _build_prompt(document_text, needed, num_options, custom_instructions)
+        try:
+            raw_groq = _call_groq(remaining_prompt)
+            groq_result = _parse_quiz(raw_groq, needed, num_options)
+            result["questions"].extend(groq_result["questions"][:needed])
+        except Exception:
+            pass
+
+    # Trim to requested count
+    result["questions"] = result["questions"][:num_questions]
+
+    if not result["questions"]:
+        raise ValueError("Failed to generate any valid questions with both Gemini and Groq.")
+
+    return result
+
+
+def _call_gemini(prompt: str, num_questions: int = 10) -> str:
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY is not set in the environment.")
+
+    max_tokens = max(2000, min(8192, num_questions * 350))
+
     resp = None
     try:
         resp = requests.post(
@@ -108,7 +150,7 @@ def _call_gemini(prompt: str) -> str:
                 "contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {
                     "temperature": 0.1,
-                    "maxOutputTokens": 2500,
+                    "maxOutputTokens": max_tokens,
                     "responseMimeType": "application/json",
                 },
             },
@@ -119,6 +161,36 @@ def _call_gemini(prompt: str) -> str:
     except requests.RequestException as e:
         error_details = resp.text if resp is not None else str(e)
         raise RuntimeError(f"Gemini request failed: {e}. Details: {error_details}") from e
+
+
+def _call_groq(prompt: str) -> str:
+    if not GROQ_API_KEY:
+        raise RuntimeError("GROQ_API_KEY is not set in the environment.")
+
+    resp = None
+    try:
+        resp = requests.post(
+            GROQ_URL,
+            headers={
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": GROQ_MODEL,
+                "messages": [
+                    {"role": "system", "content": "You are a quiz generator. Return ONLY valid JSON with no markdown, no preamble, no explanation. The JSON must have a 'questions' array."},
+                    {"role": "user", "content": prompt},
+                ],
+                "temperature": 0.1,
+                "max_tokens": 4096,
+            },
+            timeout=60,
+        )
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"]
+    except requests.RequestException as e:
+        error_details = resp.text if resp is not None else str(e)
+        raise RuntimeError(f"Groq request failed: {e}. Details: {error_details}") from e
 
 
 def _parse_quiz(raw: str, num_questions: int = 10, num_options: int = 4) -> dict:
@@ -139,6 +211,7 @@ def _parse_quiz(raw: str, num_questions: int = 10, num_options: int = 4) -> dict
 
     if not isinstance(data, dict) or "questions" not in data or not isinstance(data["questions"], list):
         raise ValueError("LLM response missing 'questions' list.")
+
     valid = []
     for item in data["questions"]:
         if not isinstance(item, dict):
@@ -146,19 +219,29 @@ def _parse_quiz(raw: str, num_questions: int = 10, num_options: int = 4) -> dict
         q = item.get("question", "").strip()
         choices = item.get("choices", [])
         idx = item.get("correct_index")
+
+        if not isinstance(choices, list):
+            continue
+
+        trimmed_choices = [c.strip() for c in choices if isinstance(c, str) and c.strip()]
+        if len(trimmed_choices) > num_options:
+            trimmed_choices = trimmed_choices[:num_options]
+        if idx is not None and isinstance(idx, int) and idx >= len(trimmed_choices):
+            idx = 0
+
         if (
             q
-            and isinstance(choices, list)
-            and 2 <= len(choices) <= num_options
-            and all(isinstance(c, str) and c.strip() for c in choices)
+            and len(trimmed_choices) >= 2
             and isinstance(idx, int)
-            and 0 <= idx < len(choices)
+            and 0 <= idx < len(trimmed_choices)
         ):
             valid.append({
                 "question": q,
-                "choices": [c.strip() for c in choices],
+                "choices": trimmed_choices,
                 "correct_index": idx,
             })
+
     if not valid:
         raise ValueError(f"No valid questions parsed. Raw: {raw[:500]}")
+
     return {"questions": valid[:num_questions]}

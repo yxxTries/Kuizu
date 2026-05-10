@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useTheme } from "./ThemeContext.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
-import { useAudio } from "./AudioContext.jsx";
+import { useAudio, TRACKS } from "./AudioContext.jsx";
 
 // Classic Kahoot-inspired answer colors
 const CHOICE_COLORS = [
@@ -450,9 +450,10 @@ export default function Quiz({
     }
   }, [current, total, isMultiplayer, timerSettings.enabled, timerSettings.secondsPerQuestion]);
 
-  // Auto-play music when quiz starts
+  // Auto-play a random track when quiz starts
   useEffect(() => {
-    play();
+    const randomTrack = TRACKS[Math.floor(Math.random() * TRACKS.length)];
+    play(randomTrack.id);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Persist solo progress so refreshes/accidental navigation can resume

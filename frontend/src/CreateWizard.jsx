@@ -548,6 +548,7 @@ export default function CreateWizard({ user, onPlay, onHost, onSaveGame, onPostD
           .wiz-step-nav .wiz-arcade { padding: 10px 16px !important; font-size: 13px !important; }
           .wiz-step4-actionbar .wiz-arcade { padding: 8px 12px !important; font-size: 12px !important; min-height: 34px !important; }
           .wiz-step4-actionbar { flex-direction: column !important; align-items: stretch !important; }
+          .wiz-timer-grid .wiz-arcade { padding: 10px 14px !important; font-size: 13px !important; min-width: auto !important; }
         }
         @media (max-width: 400px) {
           .wiz-step-nav { flex-wrap: wrap; gap: 8px; }
@@ -674,7 +675,7 @@ export default function CreateWizard({ user, onPlay, onHost, onSaveGame, onPostD
         <div style={{ ...styles.stepPanel, animation: "fadeUp 0.35s ease both" }}>
           <h2 style={styles.stepTitle}>Set a timer</h2>
           <p style={styles.stepSub}>How much time per question?</p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 12 }}>
+          <div className="wiz-timer-grid" style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 12 }}>
             <button type="button" className="wiz-arcade" style={{ ...styles.timerBtn, ...(!timeControl.enabled ? styles.timerBtnActive : {}) }} onClick={() => setTimeControl((p) => ({ ...p, enabled: false }))}>No Timer</button>
             {TIMER_PRESETS.map((preset) => (
               <button key={preset.id} type="button" className="wiz-arcade" style={{ ...styles.timerBtn, ...(timeControl.enabled && timeControl.preset === preset.id ? styles.timerBtnActive : {}) }} onClick={() => setTimeControl({ enabled: true, preset: preset.id, secondsPerQuestion: preset.seconds })}>
